@@ -66,7 +66,12 @@ body { background:var(--bg); color:var(--text); font-family:'Space Mono',monospa
 .rm { width:12px; height:12px; border-radius:50%; background:var(--dot); border:1.5px solid rgba(0,0,0,.4); cursor:pointer; transition:transform .15s; opacity:.85; }
 .rm:hover { transform:scale(1.7); opacity:1; }
 .rm.playing { opacity:1; border-color:rgba(0,0,0,.2); box-shadow:0 0 0 3px rgba(232,255,71,.25),0 0 10px rgba(232,255,71,.4); animation:pm 1.5s ease-in-out infinite; }
+.rm.fav { background:#1D9E75; border-color:rgba(0,0,0,.3); opacity:1; }
 @keyframes pm { 50% { box-shadow:0 0 0 6px rgba(232,255,71,.1),0 0 18px rgba(232,255,71,.5); } }
+.fav-btn { background:none; border:none; cursor:pointer; font-size:14px; line-height:1; padding:0; flex-shrink:0; opacity:.35; transition:opacity .15s, transform .15s; }
+.fav-btn:hover { opacity:1; transform:scale(1.2); }
+.fav-btn.on { opacity:1; }
+.fav-sep { font-size:9px; color:#1D9E75; padding:8px 12px 4px; letter-spacing:.5px; }
 
 .pp { padding:13px; }
 .pname { font-family:'Syne',sans-serif; font-size:14px; font-weight:800; color:#f0f0f0; margin-bottom:2px; }
@@ -245,6 +250,7 @@ const BUILT_IN = [
   {name:"Frisky Radio",city:"Online",country:"Global",lat:1,lng:20,web:"https://friskyradio.com",desc:"24/7 deep house, techno and progressive electronic. The connoisseur's choice since 2001."},
   // Newly added
   {name:"LYL Radio",city:"Lyon",country:"France",lat:45.75,lng:4.85,stream:"https://icecast.lyl.live/live",web:"https://lyl.live",desc:"Lyon's cult independent station with studios in Paris and Brussels too. Disco, experimental, techno and world — broadcasting live since 2018."},
+  {name:"RTL3",city:"Grenoble",country:"France",lat:45.188,lng:5.724,stream:"https://rtl3.radiocult.fm/stream",web:"https://rtl3.fr",desc:"Radio indépendante basée au Couvent des Minimes à Grenoble. Musiques électroniques, expérimentales et scène locale alpine."},
   {name:"Le Mellotron",city:"Paris",country:"France",lat:48.87,lng:2.36,web:"https://lemellotron.com",desc:"Parisian global music radio since 2007. Eclectic, exigeant and perpetually in motion — soul, jazz, funk, world and beyond."},
   {name:"Radio Meuh",city:"Annecy",country:"France",lat:45.9,lng:6.12,web:"https://radiomeuh.com",desc:"Electronic, soul and funk from the French Alps. Independent and joyful since 2001 — one of France's most beloved web radios."},
   {name:"Radio DY10",city:"Nantes",country:"France",lat:47.22,lng:-1.55,web:"https://radiody10.com",desc:"Nantes-based station focused on the local scene. Balearic, tropical sounds, dance music and trippy electronic. Dream on."},
@@ -316,6 +322,18 @@ let custom = [];
 try { custom = JSON.parse(localStorage.getItem('rw_custom')||'[]'); } catch(e) {}
 let stations = [...BUILT_IN, ...custom];
 
+let favs = new Set();
+try { favs = new Set(JSON.parse(localStorage.getItem('rw_favs')||'[]')); } catch(e) {}
+
+function toggleFav(name) {
+  if (favs.has(name)) favs.delete(name); else favs.add(name);
+  localStorage.setItem('rw_favs', JSON.stringify([...favs]));
+  renderMarkers(); renderList();
+  // reopen popup for current marker
+  const idx = stations.findIndex(s=>s.name===name);
+  if (idx>=0) setTimeout(()=>{ if(markers[idx]) markers[idx].openPopup(); },60);
+}
+
 let current = null, playing = false, markers = {}, map;
 const audio = document.getElementById('audio-el');
 
@@ -325,27 +343,39 @@ function initMap() {
   renderMarkers();
 }
 
-function mkIcon(isPlaying) {
+function mkIcon(isPlaying, isFav) {
   return L.divIcon({
     className:'',
-    html:`<div class="rm${isPlaying?' playing':''}"></div>`,
+    html:`<div class="rm${isPlaying?' playing':''}${isFav?' fav':''}"></div>`,
     iconSize:[12,12],iconAnchor:[6,6],popupAnchor:[0,-10]
   });
 }
 
 function buildPopup(s,i) {
   const isP = current?.name===s.name;
+  const isFav = favs.has(s.name);
   let btnLabel = '▶ Play', btnClass = '';
   if (isP && playing) { btnLabel = '■ Stop'; btnClass = 'stop'; }
   const webLink = s.web ? `<a href="${s.web}" target="_blank" style="font-size:10px;color:var(--accent);text-decoration:none;opacity:.7;display:block;margin-bottom:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.7">${s.web.replace(/^https?:\/\//,'')}</a>` : '';
-  return `<div class="pp"><div class="pname">${s.name}</div><div class="ploc">${s.city}, ${s.country}</div><div class="pdesc">${s.desc}</div>${webLink}<button class="pplay ${btnClass}" id="pb${i}" onclick="handlePlay(${i})">${btnLabel}</button></div>`;
+  return `<div class="pp">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:2px">
+      <div class="pname" style="margin:0">${s.name}</div>
+      <button class="fav-btn ${isFav?'on':''}" onclick="toggleFav('${s.name.replace(/'/g,"\\'")}');event.stopPropagation()" title="${isFav?'Remove from favourites':'Add to favourites'}">${isFav?'💚':'🤍'}</button>
+    </div>
+    <div class="ploc">${s.city}, ${s.country}</div>
+    <div class="pdesc">${s.desc}</div>
+    ${webLink}
+    <button class="pplay ${btnClass}" id="pb${i}" onclick="handlePlay(${i})">${btnLabel}</button>
+  </div>`;
 }
 
 function renderMarkers() {
   Object.values(markers).forEach(m => { try { map.removeLayer(m); } catch(e){} });
   markers = {};
   stations.forEach((s,i) => {
-    const m = L.marker([s.lat,s.lng],{icon:mkIcon(current?.name===s.name&&playing)}).addTo(map);
+    const isP = current?.name===s.name&&playing;
+    const isFav = favs.has(s.name);
+    const m = L.marker([s.lat,s.lng],{icon:mkIcon(isP, isFav)}).addTo(map);
     m.bindPopup(buildPopup(s,i),{maxWidth:240});
     markers[i] = m;
   });
@@ -391,15 +421,25 @@ function updateUI() {
 
 function renderList() {
   const q = document.getElementById('search').value.toLowerCase();
-  const list = stations.map((s,i)=>({...s,_i:i})).filter(s=>
+  const all = stations.map((s,i)=>({...s,_i:i})).filter(s=>
     !q || s.name.toLowerCase().includes(q) || s.city.toLowerCase().includes(q) || s.country.toLowerCase().includes(q)
   );
+  const favList = all.filter(s => favs.has(s.name));
+  const rest = all.filter(s => !favs.has(s.name));
+  const favSection = favList.length ? `<div class="fav-sep">♥ Favourites</div>` + favList.map(s => renderItem(s)).join('') : '';
+  const restSection = rest.map(s => renderItem(s)).join('');
   document.getElementById('list').innerHTML =
-    `<div class="sc">${list.length} station${list.length!==1?'s':''}</div>` +
-    list.map(s=>`<div class="si ${current?.name===s.name?'active':''}" onclick="flyTo(${s._i})">
-      <div class="sd"></div>
-      <div class="sinfo"><div class="sn">${s.name}</div><div class="sl">${s.city}, ${s.country}</div></div>
-    </div>`).join('');
+    `<div class="sc">${all.length} station${all.length!==1?'s':''}</div>` + favSection + restSection;
+}
+
+function renderItem(s) {
+  const isFav = favs.has(s.name);
+  const isActive = current?.name===s.name;
+  return `<div class="si ${isActive?'active':''}" onclick="flyTo(${s._i})">
+    <div class="sd" style="${isFav?'background:#1D9E75;opacity:1':''}"></div>
+    <div class="sinfo"><div class="sn">${s.name}</div><div class="sl">${s.city}, ${s.country}</div></div>
+    <button class="fav-btn ${isFav?'on':''}" onclick="toggleFav('${s.name.replace(/'/g,"\\'")}');event.stopPropagation()" title="Favourite">${isFav?'💚':'🤍'}</button>
+  </div>`;
 }
 
 function flyTo(idx) {
