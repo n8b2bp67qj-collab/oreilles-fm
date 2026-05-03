@@ -4,289 +4,389 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Oreilles FM</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
 <style>
-:root { --bg:#0a0a0a; --surface:#141414; --surface2:#1e1e1e; --border:#2a2a2a; --accent:#e8ff47; --text:#f0f0f0; --muted:#555; --dot:#e8ff47; }
-* { box-sizing:border-box; margin:0; padding:0; }
-body { background:var(--bg); color:var(--text); font-family:'Space Mono',monospace; height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+:root {
+  --bg: #0e0e0e;
+  --surface: #161616;
+  --surface2: #242424;
+  --border: #2e2e2e;
+  --accent: #e8e8e8;
+  --red: #d42b2b;
+  --red-dim: rgba(212,43,43,0.18);
+  --text: #f0f0f0;
+  --muted: #555;
+  --pop-bg: #141414;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: 'Space Mono', monospace;
+  height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+}
 
-#header { display:flex; align-items:center; gap:12px; padding:10px 20px; border-bottom:1px solid var(--border); flex-shrink:0; }
-#logo { font-family:'Syne',sans-serif; font-weight:800; font-size:17px; color:var(--accent); white-space:nowrap; letter-spacing:-0.5px; }
-#logo span { color:var(--text); }
+/* ── Header ── */
+#header {
+  display: flex; align-items: center; gap: 14px;
+  padding: 10px 20px; border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+#logo {
+  font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px;
+  color: var(--text); letter-spacing: -0.5px; white-space: nowrap;
+  text-decoration: underline; text-decoration-style: wavy;
+  text-underline-offset: 4px; text-decoration-color: var(--red);
+}
+#logo span { color: var(--red); }
 
-#player { display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:7px 12px; flex:1; max-width:480px; min-width:0; }
-#pbtn { width:30px; height:30px; border-radius:50%; background:var(--accent); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:transform .1s; }
-#pbtn:hover { transform:scale(1.08); }
-#pbtn svg { width:11px; height:11px; fill:#000; }
-.pi { flex:1; min-width:0; }
-.pn { font-family:'Syne',sans-serif; font-weight:700; font-size:12px; color:var(--accent); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.pm { font-size:10px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
-.eq { display:flex; align-items:flex-end; gap:2px; height:14px; flex-shrink:0; }
-.eb { width:3px; background:var(--accent); border-radius:1px; height:4px; }
-.eq.on .eb { animation:eq .7s ease-in-out infinite alternate; }
-.eq.on .eb:nth-child(2) { animation-delay:.2s; }
-.eq.on .eb:nth-child(3) { animation-delay:.4s; }
-@keyframes eq { to { height:13px; } }
-.vw { display:flex; align-items:center; gap:5px; flex-shrink:0; }
-.vw svg { width:12px; height:12px; fill:var(--muted); }
-#vol { width:52px; accent-color:var(--accent); }
-#addbtn { background:transparent; border:1px solid var(--border); color:var(--text); padding:7px 13px; border-radius:5px; font-family:'Space Mono',monospace; font-size:11px; cursor:pointer; white-space:nowrap; flex-shrink:0; transition:all .15s; }
-#addbtn:hover { border-color:var(--accent); color:var(--accent); }
+/* ── Player ── */
+#player {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface); border: 1px dashed var(--border);
+  border-radius: 2px; padding: 7px 12px; flex: 1; max-width: 480px; min-width: 0;
+}
+#pbtn {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--text); border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: transform .1s;
+}
+#pbtn:hover { transform: scale(1.1); }
+#pbtn svg { width: 10px; height: 10px; fill: #000; }
+.pi { flex: 1; min-width: 0; }
+.pn { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 12px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pm { font-size: 10px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; font-style: italic; }
+.eq { display: flex; align-items: flex-end; gap: 2px; height: 14px; flex-shrink: 0; }
+.eb { width: 3px; background: var(--red); border-radius: 1px; height: 4px; }
+.eq.on .eb { animation: eq .7s ease-in-out infinite alternate; }
+.eq.on .eb:nth-child(2) { animation-delay: .2s; }
+.eq.on .eb:nth-child(3) { animation-delay: .4s; }
+@keyframes eq { to { height: 13px; } }
+.vw { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+.vw svg { width: 12px; height: 12px; fill: var(--muted); }
+#vol { width: 50px; accent-color: var(--red); }
+#addbtn {
+  background: transparent; border: 1px dashed var(--border); color: var(--muted);
+  padding: 7px 12px; border-radius: 2px; font-family: 'Space Mono', monospace;
+  font-size: 10px; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: all .15s;
+}
+#addbtn:hover { border-color: var(--text); color: var(--text); }
 
-#main { display:flex; flex:1; overflow:hidden; }
+/* ── Layout ── */
+#main { display: flex; flex: 1; overflow: hidden; }
 
-#sidebar { width:270px; flex-shrink:0; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
-#sw { padding:10px; border-bottom:1px solid var(--border); }
-#search { width:100%; background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:7px 10px; border-radius:5px; font-family:'Space Mono',monospace; font-size:11px; outline:none; }
-#search:focus { border-color:var(--accent); }
-#search::placeholder { color:var(--muted); }
-#list { flex:1; overflow-y:auto; scrollbar-width:thin; scrollbar-color:var(--border) transparent; }
-.sc { font-size:9px; color:var(--muted); padding:8px 12px; letter-spacing:.5px; }
-.si { padding:9px 12px; cursor:pointer; border-bottom:1px solid #181818; display:flex; align-items:center; gap:9px; transition:background .1s; }
-.si:hover { background:var(--surface2); }
-.si.active { background:#191900; border-left:2px solid var(--accent); }
-.sd { width:7px; height:7px; border-radius:50%; background:var(--dot); flex-shrink:0; opacity:.7; }
-.si.active .sd { opacity:1; }
-.sinfo { flex:1; min-width:0; }
-.sn { font-size:11px; font-weight:700; font-family:'Syne',sans-serif; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.sl { font-size:10px; color:var(--muted); margin-top:1px; }
+/* ── Sidebar toggle ── */
+#sidebar {
+  width: 265px; flex-shrink: 0; background: var(--surface);
+  border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden;
+  transition: width .25s ease, opacity .25s ease;
+}
+#sidebar.hidden { width: 0; opacity: 0; pointer-events: none; border: none; }
+#toggle-sidebar {
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--muted); cursor: pointer; padding: 5px 9px;
+  font-size: 14px; line-height: 1; border-radius: 2px;
+  flex-shrink: 0; transition: color .15s;
+}
+#toggle-sidebar:hover { color: var(--text); }
+#sw { padding: 10px; border-bottom: 1px solid var(--border); }
+#search {
+  width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--border);
+  color: var(--text); padding: 5px 2px; font-family: 'Space Mono', monospace; font-size: 11px;
+  outline: none; font-style: italic;
+}
+#search:focus { border-bottom-color: var(--red); }
+#search::placeholder { color: var(--muted); }
+#list { flex: 1; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+.sc { font-size: 9px; color: var(--muted); padding: 8px 12px; letter-spacing: .8px; text-transform: uppercase; }
+.fav-sep { font-size: 9px; color: var(--red); padding: 8px 12px 3px; letter-spacing: .8px; text-transform: uppercase; }
+.si {
+  padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #1c1c1c;
+  display: flex; align-items: center; gap: 8px; transition: background .1s;
+}
+.si:hover { background: var(--surface2); }
+.si.active { background: #1a0000; border-left: 2px solid var(--red); }
+.si.faved .sd { background: var(--red) !important; opacity: 1 !important; }
+.sd { width: 6px; height: 6px; border-radius: 50%; background: #888; flex-shrink: 0; opacity: .7; }
+.si.active .sd { background: var(--red) !important; opacity: 1; }
+.sinfo { flex: 1; min-width: 0; }
+.sn { font-size: 11px; font-weight: 700; font-family: 'Syne', sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sl { font-size: 10px; color: var(--muted); margin-top: 1px; font-style: italic; }
+.fheart { background: none; border: none; cursor: pointer; font-size: 11px; padding: 0 2px; opacity: .6; color: #888; transition: opacity .15s, color .15s; flex-shrink: 0; line-height: 1; }
+.fheart:hover { opacity: 1; color: var(--text); }
+.fheart.on { opacity: 1; color: var(--red); }
 
-#mapwrap { flex:1; position:relative; }
-#map { width:100%; height:100%; }
-.leaflet-container { background:#0d1117 !important; }
-.leaflet-tile { filter:invert(1) hue-rotate(180deg) brightness(.85) contrast(1.1) saturate(.5); }
-.leaflet-control-zoom a { background:var(--surface) !important; color:var(--text) !important; border-color:var(--border) !important; }
-.leaflet-control-attribution { background:rgba(0,0,0,.5) !important; color:var(--muted) !important; font-size:9px !important; }
-.leaflet-popup-content-wrapper { background:var(--surface) !important; border:1px solid var(--border) !important; border-radius:8px !important; box-shadow:0 8px 32px rgba(0,0,0,.7) !important; padding:0 !important; }
-.leaflet-popup-content { margin:0 !important; width:220px !important; }
-.leaflet-popup-tip { background:var(--surface) !important; }
-.leaflet-popup-close-button { color:var(--muted) !important; top:8px !important; right:8px !important; }
+/* ── Globe ── */
+#globe-wrap { flex: 1; position: relative; overflow: hidden; background: var(--bg); }
+#globe-canvas { width: 100%; height: 100%; display: block; cursor: grab; }
+#globe-canvas:active { cursor: grabbing; }
 
-.rm { width:12px; height:12px; border-radius:50%; background:var(--dot); border:1.5px solid rgba(0,0,0,.4); cursor:pointer; transition:transform .15s; opacity:.85; }
-.rm:hover { transform:scale(1.7); opacity:1; }
-.rm.playing { opacity:1; border-color:rgba(0,0,0,.2); box-shadow:0 0 0 3px rgba(232,255,71,.25),0 0 10px rgba(232,255,71,.4); animation:pm 1.5s ease-in-out infinite; }
-.rm.fav { background:#1D9E75; border-color:rgba(0,0,0,.3); opacity:1; }
-@keyframes pm { 50% { box-shadow:0 0 0 6px rgba(232,255,71,.1),0 0 18px rgba(232,255,71,.5); } }
-.fav-btn { background:none; border:none; cursor:pointer; font-size:14px; line-height:1; padding:0; flex-shrink:0; opacity:.35; transition:opacity .15s, transform .15s; }
-.fav-btn:hover { opacity:1; transform:scale(1.2); }
-.fav-btn.on { opacity:1; }
-.fav-sep { font-size:9px; color:#1D9E75; padding:8px 12px 4px; letter-spacing:.5px; }
+/* ── Popup ── */
+#popup {
+  position: absolute; background: var(--pop-bg);
+  border: 1px solid var(--border);
+  border-radius: 2px; padding: 0; width: 230px;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.6);
+  display: none; z-index: 100; pointer-events: all;
+  font-family: 'Space Mono', monospace;
+}
+#popup-inner { padding: 13px 14px 14px; }
+.pop-header { display: flex; align-items: flex-start; gap: 6px; margin-bottom: 2px; padding-right: 20px; }
+.pop-name { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 800; color: var(--text); flex: 1; }
+.pop-fav { background: none; border: none; cursor: pointer; font-size: 13px; padding: 0; line-height: 1; opacity: .6; color: #888; transition: opacity .15s, color .15s; flex-shrink: 0; margin-top: 2px; }
+.pop-fav:hover { opacity: 1; color: var(--text); }
+.pop-fav.on { opacity: 1; color: var(--red); }
+.pop-loc { font-size: 10px; color: var(--muted); margin-bottom: 8px; font-style: italic; }
+.pop-desc { font-size: 10px; color: #888; line-height: 1.6; margin-bottom: 9px; font-style: italic; }
+.pop-web { font-size: 10px; color: #aaa; text-decoration: none; display: block; margin-bottom: 10px; opacity: .6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: opacity .15s; }
+.pop-web:hover { opacity: 1; color: var(--text); }
+.pop-play {
+  width: 100%; padding: 8px; background: var(--text); color: #000;
+  border: none; border-radius: 1px; font-family: 'Syne', sans-serif;
+  font-weight: 700; font-size: 12px; cursor: pointer; transition: opacity .15s;
+  letter-spacing: .3px;
+}
+.pop-play:hover { opacity: .85; }
+.pop-play.loading { background: var(--surface2); color: var(--muted); cursor: default; }
+.pop-play.stop { background: var(--red); color: #fff; }
+#popup-close {
+  position: absolute; top: 8px; right: 8px; background: none; border: none;
+  color: var(--muted); cursor: pointer; font-size: 15px; line-height: 1;
+  padding: 2px 4px; transition: color .15s;
+}
+#popup-close:hover { color: var(--text); }
 
-.pp { padding:13px; }
-.pname { font-family:'Syne',sans-serif; font-size:14px; font-weight:800; color:#f0f0f0; margin-bottom:2px; }
-.ploc { font-size:10px; color:var(--muted); margin-bottom:8px; }
-.pdesc { font-size:11px; color:#aaa; line-height:1.55; margin-bottom:10px; font-style:italic; }
-.pplay { width:100%; padding:8px; background:var(--accent); color:#000; border:none; border-radius:5px; font-family:'Syne',sans-serif; font-weight:700; font-size:12px; cursor:pointer; transition:opacity .15s; }
-.pplay:hover { opacity:.85; }
-.pplay.loading { background:var(--surface2); color:var(--muted); cursor:default; }
-.pplay.stop { background:#ff6b35; color:#fff; }
+/* ── Modal ── */
+#modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.8); z-index: 9999; display: none; align-items: center; justify-content: center; }
+#modal-overlay.open { display: flex; }
+#modal { background: var(--surface); border: 1px solid var(--border); border-radius: 2px; padding: 22px; width: 380px; max-width: 95vw; max-height: 90vh; overflow-y: auto; box-shadow: 6px 6px 0 rgba(0,0,0,0.5); }
+#modal h2 { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 800; margin-bottom: 14px; color: var(--text); }
+.mf { margin-bottom: 10px; }
+.mf label { display: block; font-size: 9px; color: var(--muted); margin-bottom: 3px; text-transform: uppercase; letter-spacing: .5px; }
+.mf input, .mf select, .mf textarea { width: 100%; background: var(--surface2); border: none; border-bottom: 1px solid var(--border); color: var(--text); padding: 6px 2px; font-family: 'Space Mono', monospace; font-size: 11px; outline: none; }
+.mf input:focus, .mf select:focus, .mf textarea:focus { border-bottom-color: var(--red); }
+.mf textarea { resize: vertical; min-height: 50px; }
+.mf select option { background: var(--surface2); }
+.hint { font-size: 9px; color: var(--muted); margin-top: 3px; font-style: italic; }
+.mrow { display: flex; gap: 12px; }
+.mrow .mf { flex: 1; }
+.mbtns { display: flex; gap: 8px; margin-top: 16px; }
+.mbtns button { flex: 1; padding: 9px; border-radius: 1px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 12px; cursor: pointer; border: none; }
+#mcancel { background: var(--surface2); color: var(--muted); border: 1px dashed var(--border); }
+#msave { background: var(--text); color: #000; }
+#merr { font-size: 10px; color: var(--red); margin-top: 6px; display: none; font-style: italic; }
+.rbs { padding: 7px 0; border-bottom: 1px solid var(--border); cursor: pointer; transition: padding .1s; }
+.rbs:hover { padding-left: 6px; }
+.rbn { font-size: 11px; font-weight: 700; font-family: 'Syne', sans-serif; }
+.rbm { font-size: 10px; color: var(--muted); }
+#rblist { margin-top: 8px; max-height: 150px; overflow-y: auto; }
+#rbgo { width: 100%; padding: 7px; background: transparent; border: 1px dashed var(--border); color: var(--muted); border-radius: 1px; font-family: 'Space Mono', monospace; font-size: 11px; cursor: pointer; margin-top: 5px; }
+#rbgo:hover { border-color: var(--text); color: var(--text); }
 
-#modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.75); z-index:9999; display:none; align-items:center; justify-content:center; }
-#modal-overlay.open { display:flex; }
-#modal { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:22px; width:380px; max-width:95vw; max-height:90vh; overflow-y:auto; }
-#modal h2 { font-family:'Syne',sans-serif; font-size:15px; font-weight:800; margin-bottom:14px; color:var(--accent); }
-.mf { margin-bottom:10px; }
-.mf label { display:block; font-size:9px; color:var(--muted); margin-bottom:3px; text-transform:uppercase; letter-spacing:.5px; }
-.mf input,.mf select,.mf textarea { width:100%; background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:7px 9px; border-radius:5px; font-family:'Space Mono',monospace; font-size:11px; outline:none; }
-.mf input:focus,.mf select:focus,.mf textarea:focus { border-color:var(--accent); }
-.mf textarea { resize:vertical; min-height:50px; }
-.mf select option { background:var(--surface2); }
-.hint { font-size:9px; color:var(--muted); margin-top:3px; font-style:italic; }
-.mrow { display:flex; gap:8px; }
-.mrow .mf { flex:1; }
-.mbtns { display:flex; gap:8px; margin-top:14px; }
-.mbtns button { flex:1; padding:9px; border-radius:5px; font-family:'Syne',sans-serif; font-weight:700; font-size:12px; cursor:pointer; border:none; }
-#mcancel { background:var(--surface2); color:var(--muted); border:1px solid var(--border); }
-#msave { background:var(--accent); color:#000; }
-#merr { font-size:10px; color:#ff6b6b; margin-top:6px; display:none; }
-.rbs { padding:7px 0; border-bottom:1px solid var(--border); cursor:pointer; transition:padding .1s; }
-.rbs:hover { padding-left:4px; }
-.rbn { font-size:11px; font-weight:700; font-family:'Syne',sans-serif; color:var(--text); }
-.rbm { font-size:10px; color:var(--muted); }
-#rblist { margin-top:8px; max-height:150px; overflow-y:auto; }
-#rbgo { width:100%; padding:7px; background:var(--surface2); border:1px solid var(--border); color:var(--text); border-radius:5px; font-family:'Space Mono',monospace; font-size:11px; cursor:pointer; margin-top:5px; }
-#rbgo:hover { border-color:var(--accent); color:var(--accent); }
-audio { display:none; }
+audio { display: none; }
 </style>
 </head>
 <body>
+
 <div id="header">
+  <button id="toggle-sidebar" onclick="toggleSidebar()" title="Toggle panel">☰</button>
   <div id="logo">OREILLES<span> FM</span></div>
   <div id="player">
-    <button id="pbtn" onclick="togglePlay()"><svg id="picon" viewBox="0 0 10 12"><polygon points="0,0 10,6 0,12"/></svg></button>
-    <div class="pi"><div class="pn" id="pname">Select a station</div><div class="pm" id="pmeta">click any dot on the map</div></div>
+    <button id="pbtn" onclick="togglePlay()">
+      <svg id="picon" viewBox="0 0 10 12"><polygon points="0,0 10,6 0,12"/></svg>
+    </button>
+    <div class="pi">
+      <div class="pn" id="pname">Select a station</div>
+      <div class="pm" id="pmeta">spin the globe, click a dot</div>
+    </div>
     <div class="eq" id="eq"><div class="eb"></div><div class="eb"></div><div class="eb"></div></div>
-    <div class="vw"><svg viewBox="0 0 14 12"><path d="M0 4h3l4-4v12l-4-4H0zM10 2a6 6 0 010 8M8 3.5a3.5 3.5 0 010 5"/></svg><input type="range" id="vol" min="0" max="1" step=".01" value=".8" oninput="audio.volume=this.value"></div>
+    <div class="vw">
+      <svg viewBox="0 0 14 12"><path d="M0 4h3l4-4v12l-4-4H0zM10 2a6 6 0 010 8M8 3.5a3.5 3.5 0 010 5"/></svg>
+      <input type="range" id="vol" min="0" max="1" step=".01" value=".8" oninput="audio.volume=this.value">
+    </div>
   </div>
-  <button id="addbtn" onclick="openModal()">+ Add radio</button>
-</div>
-<div id="main">
-  <div id="sidebar">
-    <div id="sw"><input type="text" id="search" placeholder="Search…" oninput="renderList()"></div>
-    <div id="list"></div>
-  </div>
-  <div id="mapwrap"><div id="map"></div></div>
+  <button id="addbtn" onclick="openModal()">+ add radio</button>
 </div>
 
+<div id="main">
+  <div id="sidebar">
+    <div id="sw"><input type="text" id="search" placeholder="search stations…" oninput="renderList()"></div>
+    <div id="list"></div>
+  </div>
+  <div id="globe-wrap">
+    <canvas id="globe-canvas"></canvas>
+    <div id="popup">
+      <button id="popup-close" onclick="closePopup()">×</button>
+      <div id="popup-inner"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Add radio modal -->
 <div id="modal-overlay">
   <div id="modal">
-    <h2>+ Add radio</h2>
+    <h2>+ add your radio</h2>
     <div class="mf">
       <label>Search Radio Browser (30 000+ stations)</label>
       <input type="text" id="rbq" placeholder="Station name…" onkeydown="if(event.key==='Enter')searchRB()">
       <button id="rbgo" onclick="searchRB()">Search →</button>
       <div id="rblist"></div>
     </div>
-    <div style="border-top:1px solid var(--border);margin:12px 0;font-size:10px;color:var(--muted);text-align:center">— or add manually —</div>
+    <div style="border-top:1px dashed var(--border);margin:12px 0;font-size:10px;color:var(--muted);text-align:center;font-style:italic">— or add manually —</div>
     <div class="mf"><label>Name *</label><input type="text" id="mname" placeholder="Station name"></div>
     <div class="mrow">
       <div class="mf"><label>City</label><input type="text" id="mcity"></div>
       <div class="mf"><label>Country</label><input type="text" id="mcountry"></div>
     </div>
     <div class="mf"><label>Description</label><textarea id="mdesc" placeholder="Short description…"></textarea></div>
-    <div class="mf"><label>Stream URL *</label><input type="text" id="mstream" placeholder="https://…stream….mp3"><div class="hint">Direct .mp3 / .aac / .ogg stream link</div></div>
+    <div class="mf">
+      <label>Stream URL *</label>
+      <input type="text" id="mstream" placeholder="https://…stream….mp3">
+      <div class="hint">Direct .mp3 / .aac / .ogg stream link</div>
+    </div>
     <div class="mf"><label>Website</label><input type="text" id="mweb" placeholder="https://…"></div>
     <div class="mrow">
       <div class="mf"><label>Latitude</label><input type="number" id="mlat" placeholder="e.g. 43.61" step=".01"></div>
       <div class="mf"><label>Longitude</label><input type="number" id="mlng" placeholder="e.g. 3.87" step=".01"></div>
     </div>
     <div id="merr">Please provide at least a name and a stream URL.</div>
-    <div class="mbtns"><button id="mcancel" onclick="closeModal()">Cancel</button><button id="msave" onclick="saveStation()">Add station</button></div>
+    <div class="mbtns">
+      <button id="mcancel" onclick="closeModal()">Cancel</button>
+      <button id="msave" onclick="saveStation()">Add station</button>
+    </div>
   </div>
 </div>
 
 <audio id="audio-el"></audio>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script src="https://unpkg.com/d3@7/dist/d3.min.js"></script>
+<script src="https://unpkg.com/topojson-client@3/dist/topojson-client.min.js"></script>
 <script>
+// ── Stations ──────────────────────────────────────────────────────────────
 const BUILT_IN = [
   // UK & Ireland
-  {name:"NTS Radio",city:"London",country:"UK",lat:51.52,lng:-.09,web:"https://nts.live",desc:"London's cult independent broadcaster. Eclectic, adventurous, anti-algorithm. The gold standard of community radio."},
-  {name:"Rinse FM",city:"London",country:"UK",lat:51.53,lng:-.08,web:"https://rinse.fm",desc:"Grime, garage, house and UK bass. The heartbeat of London's underground club culture since 1994."},
-  {name:"Worldwide FM",city:"London",country:"UK",lat:51.5,lng:-.12,web:"https://worldwidefm.net",desc:"Global grooves curated by Gilles Peterson. Jazz, soul, afrobeat and everything in between."},
+  {name:"NTS Radio",city:"London",country:"UK",lat:51.52,lng:-.09,web:"https://nts.live",stream:"https://stream-relay-geo.ntslive.net/stream",desc:"London's cult independent broadcaster. Eclectic, adventurous, anti-algorithm."},
+  {name:"Rinse FM",city:"London",country:"UK",lat:51.53,lng:-.08,web:"https://rinse.fm",desc:"Grime, garage, house and UK bass. Heartbeat of London's underground since 1994."},
+  {name:"Worldwide FM",city:"London",country:"UK",lat:51.5,lng:-.12,web:"https://worldwidefm.net",desc:"Global grooves curated by Gilles Peterson. Jazz, soul, afrobeat and everything between."},
   {name:"Noods Radio",city:"Bristol",country:"UK",lat:51.45,lng:-2.6,web:"https://noodsradio.com",desc:"Bristol's fiercely independent station. Community-first and boundary-pushing since 2018."},
-  {name:"Resonance FM",city:"London",country:"UK",lat:51.5,lng:-.09,web:"https://resonancefm.com",desc:"Arts radio broadcasting experimental, avant-garde and community programming since 2002."},
-  {name:"1BTN",city:"Brighton",country:"UK",lat:50.82,lng:-.14,web:"https://1btn.fm",desc:"Brighton's underground community station. Multi-genre from indie and punk to house and hip-hop."},
-  {name:"Pound & Yam",city:"London",country:"UK",lat:51.55,lng:-.07,web:"https://poundandyam.com",desc:"Black-owned independent radio from Dalston. Eclectic genres, underrepresented voices, zero commercial pressure."},
-  {name:"Voices Radio",city:"London",country:"UK",lat:51.54,lng:-.12,web:"https://voicesradio.co.uk",desc:"Broadcasting from Coal Drops Yard, King's Cross. Social issues, diversity and music with purpose."},
+  {name:"Resonance FM",city:"London",country:"UK",lat:51.5,lng:-.09,web:"https://resonancefm.com",stream:"https://media.resonancefm.com/resonance-128.mp3",desc:"Arts radio broadcasting experimental and avant-garde programming since 2002."},
+  {name:"1BTN",city:"Brighton",country:"UK",lat:50.82,lng:-.14,web:"https://1btn.fm",desc:"Brighton's underground community station. Multi-genre, zero commercial pressure."},
+  {name:"Pound & Yam",city:"London",country:"UK",lat:51.55,lng:-.07,web:"https://poundandyam.com",desc:"Black-owned independent radio from Dalston. Eclectic genres, underrepresented voices."},
+  {name:"Voices Radio",city:"London",country:"UK",lat:51.54,lng:-.12,web:"https://voicesradio.co.uk",desc:"Broadcasting from Coal Drops Yard, King's Cross. Social issues, diversity and music."},
+  {name:"Soho Radio",city:"London",country:"UK",lat:51.51,lng:-.13,web:"https://sohoradio.com",desc:"Broadcasting from the heart of Soho since 2015. Eclectic music from London's most creative neighbourhood."},
+  {name:"Aaja Music",city:"London",country:"UK",lat:51.52,lng:-.08,web:"https://aaja.app",desc:"London music bar turned streaming space. Intimate live sets broadcast to the world."},
+  {name:"Netil Radio",city:"London",country:"UK",lat:51.54,lng:-.06,web:"https://netilradio.com",desc:"Community radio from a shipping container in London Fields, Hackney."},
+  {name:"Do!! You!!! Radio",city:"London",country:"UK",lat:51.53,lng:-.1,web:"https://doyouworld.com",desc:"London community radio where music discovery comes first. Pure love of music."},
+  {name:"Subcity Radio",city:"Glasgow",country:"UK",lat:55.87,lng:-4.28,web:"https://subcity.org",desc:"Independent station from the University of Glasgow. Student-run and fiercely non-commercial since 1996."},
   {name:"Dublin Digital Radio",city:"Dublin",country:"Ireland",lat:53.34,lng:-6.27,web:"https://www.dublindigitalradio.com",desc:"Ireland's independent underground station. Arts, music and community from the Irish capital."},
   // France
-  {name:"FIP",city:"Paris",country:"France",lat:48.87,lng:2.35,stream:"https://icecast.radiofrance.fr/fip-midfi.mp3",web:"https://radiofrance.fr/fip",desc:"France's most eclectic radio. Jazz, soul, world — no genre barriers, no ads, no talking heads. An institution."},
-  {name:"Radio Nova",city:"Paris",country:"France",lat:48.85,lng:2.32,stream:"https://novazz.ice.infomaniak.ch/novazz-128.mp3",web:"https://nova.fr",desc:"World beats, funk, soul and creative music from Paris. Shaping French culture since 1981."},
-  {name:"Pinata Radio",city:"Montpellier",country:"France",lat:43.61,lng:3.87,web:"https://pinataradio.com",desc:"Montpellier's colourful independent radio. Eclectic electronic music and festive vibes from the South of France."},
-  {name:"Let Him Cook",city:"Paris",country:"France",lat:48.86,lng:2.33,web:"https://lethimcook.radio",desc:"Artists mix and perform live inside a real restaurant kitchen. Music fused with the energy of a working service."},
+  {name:"FIP",city:"Paris",country:"France",lat:48.87,lng:2.35,stream:"https://icecast.radiofrance.fr/fip-midfi.mp3",web:"https://radiofrance.fr/fip",desc:"France's most eclectic radio. Jazz, soul, world — no genre barriers, no ads. An institution."},
+  {name:"Radio Nova",city:"Paris",country:"France",lat:48.85,lng:2.32,stream:"https://novazz.ice.infomaniak.ch/novazz-128.mp3",web:"https://nova.fr",desc:"World beats, funk, soul and creative music. Shaping French culture since 1981."},
+  {name:"Pinata Radio",city:"Montpellier",country:"France",lat:43.61,lng:3.87,web:"https://pinataradio.com",desc:"Montpellier's colourful independent radio. Eclectic electronic music and festive vibes from the South."},
+  {name:"LYL Radio",city:"Lyon",country:"France",lat:45.75,lng:4.85,stream:"https://icecast.lyl.live/live",web:"https://lyl.live",desc:"Lyon's cult independent station. Disco, experimental, techno and world — live since 2018."},
+  {name:"RTL3",city:"Grenoble",country:"France",lat:45.188,lng:5.724,stream:"https://rtl3.radiocult.fm/stream",web:"https://rtl3.fr",desc:"Radio indépendante au Couvent des Minimes, Grenoble. Musiques électroniques et scène locale alpine."},
+  {name:"Le Mellotron",city:"Paris",country:"France",lat:48.87,lng:2.36,web:"https://lemellotron.com",desc:"Parisian global music radio since 2007. Soul, jazz, funk, world — always exigeant."},
+  {name:"Radio Meuh",city:"Annecy",country:"France",lat:45.9,lng:6.12,web:"https://radiomeuh.com",desc:"Electronic, soul and funk from the French Alps. Independent and joyful since 2001."},
+  {name:"Radio DY10",city:"Nantes",country:"France",lat:47.22,lng:-1.55,web:"https://radiody10.com",desc:"Nantes-based station. Balearic, tropical sounds, dance music and trippy electronic."},
+  {name:"Let Him Cook",city:"Paris",country:"France",lat:48.86,lng:2.33,web:"https://lethimcook.radio",desc:"Artists mix live inside a real restaurant kitchen. Music fused with working service energy."},
   {name:"Radio Grenouille",city:"Marseille",country:"France",lat:43.3,lng:5.38,web:"https://radiogrenouille.com",desc:"Marseille's eclectic free radio since 1981. World music, jazz and Mediterranean culture."},
-  {name:"Ola Radio",city:"Marseille",country:"France",lat:43.29,lng:5.37,web:"https://olaradio.fr",desc:"Originally from Bordeaux, now Marseille-based. Independent and culturally rich programming from the South."},
-  {name:"Cinemix",city:"Paris",country:"France",lat:48.88,lng:2.34,web:"https://cinemix.us",desc:"France-based radio dedicated entirely to film and TV soundtracks. Future classics and golden-era scores."},
+  {name:"Cinemix",city:"Paris",country:"France",lat:48.88,lng:2.34,web:"https://cinemix.us",desc:"Radio dedicated to film and TV soundtracks. Future classics and golden-era scores."},
   // Belgium
-  {name:"Kiosk Radio",city:"Brussels",country:"Belgium",lat:50.85,lng:4.36,web:"https://kioskradio.com",desc:"Brussels' eclectic broadcast from the iconic Bozar kiosk. Community, arts and rare sounds."},
+  {name:"Kiosk Radio",city:"Brussels",country:"Belgium",lat:50.85,lng:4.36,web:"https://kioskradio.com",desc:"Brussels' eclectic broadcast from the Bozar kiosk. Community, arts and rare sounds."},
   {name:"Radio Centraal",city:"Antwerp",country:"Belgium",lat:51.22,lng:4.4,web:"https://radiocentraal.be",desc:"Community radio from Antwerp since 1980. One of Belgium's oldest independent stations."},
   // Netherlands
   {name:"Red Light Radio",city:"Amsterdam",country:"Netherlands",lat:52.37,lng:4.9,web:"https://redlightradio.net",desc:"Amsterdam's underground electronic station. Live sets from the city's best DJs, every day."},
-  {name:"Intergalactic FM",city:"Tilburg",country:"Netherlands",lat:51.56,lng:5.09,web:"https://intergalactic.fm",desc:"Electro, techno and cosmic sounds. No compromises, pure machine music from the future."},
+  {name:"Intergalactic FM",city:"Tilburg",country:"Netherlands",lat:51.56,lng:5.09,web:"https://intergalactic.fm",desc:"Electro, techno and cosmic sounds. No compromises, pure machine music."},
   // Germany
-  {name:"Cashmere Radio",city:"Berlin",country:"Germany",lat:52.49,lng:13.45,web:"https://cashmereradio.com",desc:"Berlin experimental community radio from Wedding. Art, discourse and left-field sounds since 2015."},
+  {name:"Cashmere Radio",city:"Berlin",country:"Germany",lat:52.49,lng:13.45,web:"https://cashmereradio.com",desc:"Berlin experimental community radio. Art, discourse and left-field sounds since 2015."},
   {name:"Radio 80000",city:"Munich",country:"Germany",lat:48.14,lng:11.58,web:"https://80000.de",desc:"Munich's independent underground station. Electronic music and club culture from Bavaria."},
   {name:"Reboot FM",city:"Berlin",country:"Germany",lat:52.5,lng:13.41,web:"https://reboot.fm",desc:"Free artist radio from Berlin. Art, discourse and electronic music since 2005."},
-  {name:"Radio Corax",city:"Halle",country:"Germany",lat:51.48,lng:11.97,web:"https://radiocorax.de",desc:"Free non-commercial radio from Halle. 300 volunteer contributors making radio as it should be."},
-  {name:"Sphere Radio",city:"Leipzig",country:"Germany",lat:51.34,lng:12.38,web:"https://sphereradio.de",desc:"Leipzig's independent electronic and experimental music station. Part of the new wave of European community radio."},
+  {name:"Radio Corax",city:"Halle",country:"Germany",lat:51.48,lng:11.97,web:"https://radiocorax.de",desc:"Free non-commercial radio from Halle. 300 volunteer contributors."},
+  {name:"Refuge Worldwide",city:"Berlin",country:"Germany",lat:52.47,lng:13.44,web:"https://refugeworldwide.com",desc:"Community radio from Berlin-Neukölln in solidarity with grassroots organisations."},
   // Portugal
-  {name:"Rádio Quântica",city:"Lisbon",country:"Portugal",lat:38.72,lng:-9.14,web:"https://radioquantica.com",desc:"Lisbon's community radio since 2015. A safe haven for underground artists and activists."},
+  {name:"Rádio Quântica",city:"Lisbon",country:"Portugal",lat:38.72,lng:-9.14,web:"https://radioquantica.com",desc:"Lisbon's community radio since 2015. Safe haven for underground artists and activists."},
   // Spain
-  {name:"Radio 3 RNE",city:"Madrid",country:"Spain",lat:40.42,lng:-3.7,web:"https://rtve.es/radio/radio3",desc:"Spain's beloved public indie station. Alternative, experimental and the Spanish music scene since 1979."},
+  {name:"Radio 3 RNE",city:"Madrid",country:"Spain",lat:40.42,lng:-3.7,web:"https://rtve.es/radio/radio3",desc:"Spain's beloved public indie station. Alternative, experimental, Spanish music since 1979."},
   // Italy
   {name:"Radio Raheem",city:"Milan",country:"Italy",lat:45.46,lng:9.19,web:"https://radioraheem.it",desc:"Milan's cosmopolitan independent radio. A richly curated journey across all genres."},
-  {name:"Fango Radio",city:"Tuscany",country:"Italy",lat:43.77,lng:11.25,web:"https://fangoradio.com",desc:"Community radio rooted in Tuscany. Independent music and arts from the Italian countryside."},
+  {name:"NEU Radio",city:"Bologna",country:"Italy",lat:44.49,lng:11.34,web:"https://neu.radio",desc:"Bologna's cultural hub radio. Afrobeats to indie rock, always with an Italian edge."},
   // Poland
-  {name:"Radio Kapitał",city:"Warsaw",country:"Poland",lat:52.23,lng:21.01,web:"https://radiokapital.pl",desc:"Warsaw's experimental community radio since 2019. Electronic, avant-garde and Polish underground culture."},
+  {name:"Radio Kapitał",city:"Warsaw",country:"Poland",lat:52.23,lng:21.01,web:"https://radiokapital.pl",desc:"Warsaw's experimental community radio. Avant-garde and Polish underground since 2019."},
   // Czech Republic
-  {name:"Radio Punctum",city:"Prague",country:"Czechia",lat:50.08,lng:14.44,web:"https://radiopunctum.cz",desc:"Prague-based community radio broadcasting 24/7. Experimental music and independent Czech voices."},
+  {name:"Radio Punctum",city:"Prague",country:"Czechia",lat:50.08,lng:14.44,web:"https://radiopunctum.cz",desc:"Prague-based community radio. Experimental music and independent Czech voices."},
   // Denmark
   {name:"The Lake Radio",city:"Copenhagen",country:"Denmark",lat:55.68,lng:12.57,web:"https://thelakeradio.com",desc:"Copenhagen's independent station. Carefully programmed music and cultural programming."},
   // Sweden
-  {name:"Retreat Radio",city:"Malmö",country:"Sweden",lat:55.6,lng:13.0,web:"https://retreatradio.com",desc:"Malmö's independent electronic station. A retreat from the noise of mainstream broadcasting."},
-  // Estonia / Finland
-  {name:"IDA Radio",city:"Tallinn",country:"Estonia",lat:59.44,lng:24.75,web:"https://idaradio.com",desc:"Tallinn-via-Helsinki community radio. Independent voices and underground music from the Baltics."},
+  {name:"Retreat Radio",city:"Malmö",country:"Sweden",lat:55.6,lng:13.0,web:"https://retreatradio.com",desc:"Malmö's independent electronic station. A retreat from mainstream broadcasting."},
+  // Estonia
+  {name:"IDA Radio",city:"Tallinn",country:"Estonia",lat:59.44,lng:24.75,web:"https://idaradio.com",desc:"Tallinn-via-Helsinki community radio. Underground music from the Baltics."},
   // Ukraine
-  {name:"20ft Radio",city:"Kyiv",country:"Ukraine",lat:50.45,lng:30.52,web:"https://20ftradio.com",desc:"Kyiv's underground music station. Resilient cultural broadcasting from Ukraine's creative community."},
+  {name:"20ft Radio",city:"Kyiv",country:"Ukraine",lat:50.45,lng:30.52,web:"https://20ftradio.com",desc:"Kyiv's underground music station. Resilient cultural broadcasting from Ukraine."},
   // Georgia
-  {name:"Mutant Radio",city:"Tbilisi",country:"Georgia",lat:41.69,lng:44.83,web:"https://mutantradio.net",desc:"Tbilisi's independent experimental station. Underground music and arts from the Caucasus."},
+  {name:"Mutant Radio",city:"Tbilisi",country:"Georgia",lat:41.69,lng:44.83,web:"https://mutantradio.net",desc:"Tbilisi's independent experimental station. Underground music from the Caucasus."},
   // Greece
-  {name:"Movement Radio",city:"Athens",country:"Greece",lat:37.98,lng:23.73,web:"https://movementradio.gr",desc:"Athens' independent underground radio. Electronic music and counterculture from the Greek capital."},
-  // North Macedonia
-  {name:"Amok Radio",city:"Skopje",country:"North Macedonia",lat:41.99,lng:21.43,web:"https://amokradio.mk",desc:"Skopje's newly launched independent station. Fresh voice in the Balkan independent radio scene."},
-  // Palestine / Middle East
-  {name:"Radio Alhara",city:"Bethlehem",country:"Palestine",lat:31.7,lng:35.2,web:"https://radioalhara.net",desc:"Neighbourhood radio from Palestine. Diaspora voices, Arabic music and community spirit since 2020."},
+  {name:"Movement Radio",city:"Athens",country:"Greece",lat:37.98,lng:23.73,web:"https://movementradio.gr",desc:"Athens' independent underground radio. Electronic music and counterculture."},
+  // Palestine
+  {name:"Radio Alhara",city:"Bethlehem",country:"Palestine",lat:31.7,lng:35.2,web:"https://radioalhara.net",desc:"Neighbourhood radio from Palestine. Diaspora voices, Arabic music and community spirit."},
+  // Ghana
+  {name:"Oroko Radio",city:"Accra",country:"Ghana",lat:5.56,lng:-.2,web:"https://oroko.live",desc:"Not-for-profit community radio from Accra. Connecting African and diasporic voices globally."},
+  // India
+  {name:"Boxout FM",city:"New Delhi",country:"India",lat:28.64,lng:77.22,web:"https://boxout.fm",desc:"India's first underground music radio. Promoting South Asian club culture globally since 2017."},
   // South Korea
   {name:"Seoul Community Radio",city:"Seoul",country:"South Korea",lat:37.57,lng:126.97,web:"https://seoulcommunityradio.com",desc:"Seoul's independent underground station. K-indie, electronic and authentic Korean culture."},
-  // India
-  {name:"Boxout FM",city:"New Delhi",country:"India",lat:28.64,lng:77.22,web:"https://boxout.fm",desc:"India's first underground music radio. Promoting South Asian club culture globally from Delhi since 2017."},
-  // Ghana
-  {name:"Oroko Radio",city:"Accra",country:"Ghana",lat:5.56,lng:-.2,web:"https://oroko.live",desc:"Not-for-profit community radio from Accra. Connecting African and diasporic voices from across the globe."},
-  // USA
-  {name:"The Lot Radio",city:"New York",country:"USA",lat:40.72,lng:-74.01,web:"https://thelotradio.com",desc:"Brooklyn's outdoor broadcast from a parking lot. Diverse and adventurous programming — a cultural landmark."},
-  {name:"KEXP",city:"Seattle",country:"USA",lat:47.62,lng:-122.35,web:"https://kexp.org",desc:"Seattle's legendary independent music radio. Home to the best live sessions on the internet."},
-  {name:"Dublab",city:"Los Angeles",country:"USA",lat:34.05,lng:-118.24,web:"https://dublab.com",desc:"Future roots music from LA. Organic, exploratory and non-commercial since 1999. A true institution."},
-  {name:"SOMA FM",city:"San Francisco",country:"USA",lat:37.78,lng:-122.42,stream:"https://stream.radioparadise.com/aac-320",web:"https://somafm.com",desc:"Listener-supported commercial-free streams. Multiple channels of hand-curated electronica and ambient."},
-  {name:"WBGO",city:"Newark",country:"USA",lat:40.73,lng:-74.17,web:"https://wbgo.org",desc:"America's premier jazz radio. Broadcasting from Newark, New Jersey since 1979."},
-  {name:"Radio Free Brooklyn",city:"New York",country:"USA",lat:40.71,lng:-73.94,web:"https://radioFreebrooklyn.com",desc:"Non-profit community station from Brooklyn since 2015. Underground bands, indie artists and live shows."},
-  {name:"X-Ray FM",city:"Portland",country:"USA",lat:45.52,lng:-122.67,web:"https://xray.fm",desc:"Portland's community radio curated by locals — journalists, comedians, musicians and artists."},
-  {name:"KUTX",city:"Austin",country:"USA",lat:30.27,lng:-97.74,web:"https://kutx.org",desc:"Austin's eclectic indie and alternative music radio. Live from the music capital of Texas."},
-  // Canada
-  {name:"CKUT",city:"Montreal",country:"Canada",lat:45.5,lng:-73.58,web:"https://ckut.ca",desc:"McGill University's non-commercial community radio. Multilingual, radically open and proudly independent."},
-  // Brazil
-  {name:"Rádio Batuta",city:"Rio de Janeiro",country:"Brazil",lat:-22.9,lng:-43.18,web:"https://radiobatuta.com.br",desc:"Brazilian cultural radio from Instituto Moreira Salles. MPB, jazz and samba with deep care."},
-  // Argentina
-  {name:"Vorterix",city:"Buenos Aires",country:"Argentina",lat:-34.61,lng:-58.37,web:"https://vorterix.com",desc:"Buenos Aires' leading rock and alternative station. The voice of Argentine underground culture."},
+  // Japan
+  {name:"Inter FM 897",city:"Tokyo",country:"Japan",lat:35.68,lng:139.69,web:"https://interfm.co.jp",desc:"Tokyo's international music radio. A global perspective from Japan's capital."},
   // Australia
-  {name:"Triple J",city:"Sydney",country:"Australia",lat:-33.87,lng:151.21,web:"https://abc.net.au/triplej",desc:"Australia's national youth broadcaster. Australian artists, alternative music and fearless journalism."},
-  {name:"FBi Radio",city:"Sydney",country:"Australia",lat:-33.88,lng:151.2,web:"https://fbiradio.com",desc:"Sydney's independent community station. Arts-driven, community-run and deeply local."},
+  {name:"Triple J",city:"Sydney",country:"Australia",lat:-33.87,lng:151.21,web:"https://abc.net.au/triplej",desc:"Australia's national youth broadcaster. Australian artists and alternative music."},
+  {name:"FBi Radio",city:"Sydney",country:"Australia",lat:-33.88,lng:151.2,web:"https://fbiradio.com",desc:"Sydney's independent community station. Arts-driven and deeply local."},
+  {name:"Skylab Radio",city:"Melbourne",country:"Australia",lat:-37.81,lng:144.96,web:"https://skylabradio.com.au",desc:"Melbourne community radio for experimental and electronic music."},
   // New Zealand
   {name:"RNZ Concert",city:"Wellington",country:"New Zealand",lat:-41.29,lng:174.78,web:"https://rnz.co.nz/concert",desc:"New Zealand's classical and arts broadcaster. Elegant programming from the Pacific."},
-  // Japan
-  {name:"Inter FM 897",city:"Tokyo",country:"Japan",lat:35.68,lng:139.69,web:"https://interfm.co.jp",desc:"Tokyo's international music radio. A global perspective from Japan's cosmopolitan capital."},
-  // Global online-only
-  {name:"Radio Paradise",city:"Paradise",country:"USA",lat:39.76,lng:-121.6,stream:"https://stream.radioparadise.com/aac-320",web:"https://radioparadise.com",desc:"Eclectic freeform radio mixing rock, world and indie. Listener-supported and ad-free since 2000."},
-  {name:"Frisky Radio",city:"Online",country:"Global",lat:1,lng:20,web:"https://friskyradio.com",desc:"24/7 deep house, techno and progressive electronic. The connoisseur's choice since 2001."},
-  // Newly added
-  {name:"LYL Radio",city:"Lyon",country:"France",lat:45.75,lng:4.85,stream:"https://icecast.lyl.live/live",web:"https://lyl.live",desc:"Lyon's cult independent station with studios in Paris and Brussels too. Disco, experimental, techno and world — broadcasting live since 2018."},
-  {name:"RTL3",city:"Grenoble",country:"France",lat:45.188,lng:5.724,stream:"https://rtl3.radiocult.fm/stream",web:"https://rtl3.fr",desc:"Radio indépendante basée au Couvent des Minimes à Grenoble. Musiques électroniques, expérimentales et scène locale alpine."},
-  {name:"Le Mellotron",city:"Paris",country:"France",lat:48.87,lng:2.36,web:"https://lemellotron.com",desc:"Parisian global music radio since 2007. Eclectic, exigeant and perpetually in motion — soul, jazz, funk, world and beyond."},
-  {name:"Radio Meuh",city:"Annecy",country:"France",lat:45.9,lng:6.12,web:"https://radiomeuh.com",desc:"Electronic, soul and funk from the French Alps. Independent and joyful since 2001 — one of France's most beloved web radios."},
-  {name:"Radio DY10",city:"Nantes",country:"France",lat:47.22,lng:-1.55,web:"https://radiody10.com",desc:"Nantes-based station focused on the local scene. Balearic, tropical sounds, dance music and trippy electronic. Dream on."},
-  {name:"Refuge Worldwide",city:"Berlin",country:"Germany",lat:52.47,lng:13.44,web:"https://refugeworldwide.com",desc:"Community radio and fundraising platform from Berlin-Neukölln. Works in solidarity with grassroots organisations. Dance music, techno, jazz and beyond."},
-  {name:"Subcity Radio",city:"Glasgow",country:"UK",lat:55.87,lng:-4.28,web:"https://subcity.org",desc:"Independent station from the University of Glasgow. Student-run, freeform and fiercely non-commercial since 1996."},
-  {name:"Soho Radio",city:"London",country:"UK",lat:51.51,lng:-.13,web:"https://sohoradio.com",desc:"Broadcasting from the heart of Soho since 2015. Eclectic music, culture and community from London's most creative neighbourhood."},
-  {name:"Aaja Music",city:"London",country:"UK",lat:51.52,lng:-.08,web:"https://aaja.app",desc:"London music bar turned streaming space. Intimate live sets and deep music selections broadcast to the world."},
-  {name:"Netil Radio",city:"London",country:"UK",lat:51.54,lng:-.06,web:"https://netilradio.com",desc:"Community radio from a shipping container in London Fields, Hackney. Local voices, global sounds."},
-  {name:"Do!! You!!! Radio",city:"London",country:"UK",lat:51.53,lng:-.1,web:"https://doyouworld.com",desc:"London community radio where music discovery and sharing come first. No chin-stroking — just pure love of music."},
-  {name:"NEU Radio",city:"Bologna",country:"Italy",lat:44.49,lng:11.34,web:"https://neu.radio",desc:"Bologna's cultural hub radio. Afrobeats to indie rock, always with an Italian edge and international ambition."},
-  {name:"Radio Meuh",city:"Annecy",country:"France",lat:45.91,lng:6.13,web:"https://radiomeuh.com",desc:"Independent web radio from the French Alps. Funk, soul, electronic and eclectic sounds since 2001."},
-  {name:"Newtown Radio",city:"New York",country:"USA",lat:40.71,lng:-73.93,web:"https://newtownradio.com",desc:"Brooklyn community radio broadcasting from a neighbourhood record shop. Local artists, global music."},
-  {name:"8 Ball Radio",city:"New York",country:"USA",lat:40.73,lng:-73.99,web:"https://8ballradio.nyc",desc:"NYC artist collective broadcasting electronic music, conversation and leftfield culture 24/7."},
-  {name:"Skylab Radio",city:"Melbourne",country:"Australia",lat:-37.81,lng:144.96,web:"https://skylabradio.com.au",desc:"Melbourne community radio for experimental and electronic music. Australia's independent underground sonic lab."},
-  {name:"Poolsuite FM",city:"Online",country:"Global",lat:21.3,lng:-157.8,web:"https://poolsuite.net",desc:"The internet's most stylish leisure radio. Summer-eternal vibes, yacht rock, boogie and vintage poolside grooves."},
+  // USA
+  {name:"The Lot Radio",city:"New York",country:"USA",lat:40.72,lng:-74.01,web:"https://thelotradio.com",desc:"Brooklyn's outdoor broadcast from a parking lot. Diverse and adventurous programming."},
+  {name:"KEXP",city:"Seattle",country:"USA",lat:47.62,lng:-122.35,web:"https://kexp.org",stream:"https://kexp-mp3-128.streamguys1.com/kexp128.mp3",desc:"Seattle's legendary independent music radio. Home to the best live sessions online."},
+  {name:"Dublab",city:"Los Angeles",country:"USA",lat:34.05,lng:-118.24,web:"https://dublab.com",desc:"Future roots music from LA. Organic, exploratory and non-commercial since 1999."},
+  {name:"SOMA FM",city:"San Francisco",country:"USA",lat:37.78,lng:-122.42,stream:"https://ice1.somafm.com/groovesalad-128-mp3",web:"https://somafm.com",desc:"Listener-supported commercial-free streams. Multiple channels of hand-curated electronica."},
+  {name:"WBGO",city:"Newark",country:"USA",lat:40.73,lng:-74.17,web:"https://wbgo.org",stream:"https://wbgo.streamguys1.com/wbgo128.mp3",desc:"America's premier jazz radio. Broadcasting from Newark, New Jersey since 1979."},
+  {name:"Radio Free Brooklyn",city:"New York",country:"USA",lat:40.71,lng:-73.94,web:"https://radioFreebrooklyn.com",desc:"Non-profit community station from Brooklyn since 2015. Underground bands, indie artists."},
+  {name:"X-Ray FM",city:"Portland",country:"USA",lat:45.52,lng:-122.67,web:"https://xray.fm",desc:"Portland's community radio curated by locals — journalists, comedians, musicians."},
+  {name:"KUTX",city:"Austin",country:"USA",lat:30.27,lng:-97.74,web:"https://kutx.org",desc:"Austin's eclectic indie and alternative music radio. Live from the music capital of Texas."},
+  {name:"Newtown Radio",city:"New York",country:"USA",lat:40.71,lng:-73.93,web:"https://newtownradio.com",desc:"Brooklyn community radio from a neighbourhood record shop. Local artists, global music."},
+  {name:"8 Ball Radio",city:"New York",country:"USA",lat:40.73,lng:-73.99,web:"https://8ballradio.nyc",desc:"NYC artist collective broadcasting electronic music and leftfield culture 24/7."},
+  {name:"Radio Paradise",city:"Paradise",country:"USA",lat:39.76,lng:-121.6,stream:"https://stream.radioparadise.com/aac-320",web:"https://radioparadise.com",desc:"Eclectic freeform radio mixing rock, world and indie. Listener-supported since 2000."},
+  // Canada
+  {name:"CKUT",city:"Montreal",country:"Canada",lat:45.5,lng:-73.58,web:"https://ckut.ca",desc:"McGill University's non-commercial community radio. Multilingual and radically open."},
+  // Brazil
+  {name:"Rádio Batuta",city:"Rio de Janeiro",country:"Brazil",lat:-22.9,lng:-43.18,web:"https://radiobatuta.com.br",desc:"Brazilian cultural radio. MPB, jazz and samba with deep care."},
+  // Argentina
+  {name:"Vorterix",city:"Buenos Aires",country:"Argentina",lat:-34.61,lng:-58.37,web:"https://vorterix.com",desc:"Buenos Aires' leading rock and alternative station. Voice of Argentine underground culture."},
+  // Global
+  {name:"Poolsuite FM",city:"Online",country:"Global",lat:21.3,lng:-157.8,web:"https://poolsuite.net",desc:"The internet's most stylish leisure radio. Summer-eternal vibes and vintage poolside grooves."},
 ];
 
+// ── Stream resolution ─────────────────────────────────────────────────────
 const RB = ["https://de1.api.radio-browser.info","https://nl1.api.radio-browser.info","https://at1.api.radio-browser.info"];
-let rbServer = RB[0];
 
 async function getStream(s) {
   if (s.stream) return s.stream;
-  try {
-    const r = await fetch(`${rbServer}/json/stations/search?name=${encodeURIComponent(s.name)}&limit=5&hidebroken=true&order=votes&reverse=true`);
-    const d = await r.json();
-    if (d[0]?.url_resolved) return d[0].url_resolved;
-    if (d[0]?.url) return d[0].url;
-  } catch(e) {}
-  // try next server
+  // Try all RB servers with multiple search strategies
+  const searches = [
+    // exact name
+    name => `name=${encodeURIComponent(name)}&nameExact=true&limit=5&hidebroken=true`,
+    // loose name
+    name => `name=${encodeURIComponent(name)}&limit=8&hidebroken=true&order=votes&reverse=true`,
+    // first word only
+    name => `name=${encodeURIComponent(name.split(' ')[0])}&limit=8&hidebroken=true&order=votes&reverse=true`,
+  ];
   for (const srv of RB) {
-    if (srv === rbServer) continue;
-    try {
-      const r = await fetch(`${srv}/json/stations/search?name=${encodeURIComponent(s.name)}&limit=5&hidebroken=true`);
-      const d = await r.json();
-      if (d[0]?.url_resolved) return d[0].url_resolved;
-    } catch(e) {}
+    for (const buildQ of searches) {
+      try {
+        const r = await fetch(`${srv}/json/stations/search?${buildQ(s.name)}`);
+        const d = await r.json();
+        const url = d[0]?.url_resolved || d[0]?.url;
+        if (url) return url;
+      } catch(e) {}
+    }
   }
   return null;
 }
@@ -298,16 +398,22 @@ async function searchRB() {
   btn.textContent = 'Searching…'; btn.disabled = true;
   const el = document.getElementById('rblist');
   try {
-    const r = await fetch(`${rbServer}/json/stations/search?name=${encodeURIComponent(q)}&limit=8&hidebroken=true&order=votes&reverse=true`);
+    const r = await fetch(`${RB[0]}/json/stations/search?name=${encodeURIComponent(q)}&limit=8&hidebroken=true&order=votes&reverse=true`);
     const d = await r.json();
-    el.innerHTML = d.length ? d.map(s=>`<div class="rbs" onclick="fillRB('${encodeURIComponent(JSON.stringify({name:s.name,city:s.state||s.country,country:s.country,lat:parseFloat(s.geo_lat)||0,lng:parseFloat(s.geo_long)||0,stream:s.url_resolved||s.url,web:s.homepage}))}')"><div class="rbn">${s.name}</div><div class="rbm">${s.country}</div></div>`).join('')
+    el.innerHTML = d.length
+      ? d.map(s=>`<div class="rbs" onclick="fillRB('${encodeURIComponent(JSON.stringify({name:s.name,city:s.state||s.country,country:s.country,lat:parseFloat(s.geo_lat)||0,lng:parseFloat(s.geo_long)||0,stream:s.url_resolved||s.url,web:s.homepage}))}')"><div class="rbn">${s.name}</div><div class="rbm">${s.country}</div></div>`).join('')
       : '<div class="rbs"><div class="rbm">No results</div></div>';
-  } catch(e) { el.innerHTML = '<div class="rbs"><div class="rbm" style="color:#ff6b6b">Search failed</div></div>'; }
+  } catch(e) { el.innerHTML='<div class="rbs"><div class="rbm" style="color:#e74c3c">Search failed</div></div>'; }
   btn.textContent = 'Search →'; btn.disabled = false;
 }
 
 function fillRB(enc) {
   const s = JSON.parse(decodeURIComponent(enc));
+  ['mname','mcity','mcountry','mstream','mweb','mlat','mlng'].forEach(id=>{
+    const key = id.replace('m','');
+    const v = s[key==='name'?'name':key==='city'?'city':key==='country'?'country':key==='stream'?'stream':key==='web'?'web':key==='lat'?'lat':'lng'];
+    if(v!==undefined) document.getElementById(id).value=v;
+  });
   document.getElementById('mname').value = s.name||'';
   document.getElementById('mcity').value = s.city||'';
   document.getElementById('mcountry').value = s.country||'';
@@ -315,138 +421,310 @@ function fillRB(enc) {
   document.getElementById('mweb').value = s.web||'';
   document.getElementById('mlat').value = s.lat||'';
   document.getElementById('mlng').value = s.lng||'';
-  document.getElementById('rblist').innerHTML = '<div style="font-size:10px;color:#1D9E75;padding:6px 0">✓ Filled — review then click Add station</div>';
+  document.getElementById('rblist').innerHTML = '<div style="font-size:10px;color:#3ecf6e;padding:6px 0;font-style:italic">✓ Filled — review and add</div>';
 }
 
-let custom = [];
-try { custom = JSON.parse(localStorage.getItem('rw_custom')||'[]'); } catch(e) {}
+// ── State ─────────────────────────────────────────────────────────────────
+let custom = []; try { custom = JSON.parse(localStorage.getItem('rw_custom')||'[]'); } catch(e) {}
 let stations = [...BUILT_IN, ...custom];
-
-let favs = new Set();
-try { favs = new Set(JSON.parse(localStorage.getItem('rw_favs')||'[]')); } catch(e) {}
-
-function toggleFav(name) {
-  if (favs.has(name)) favs.delete(name); else favs.add(name);
-  localStorage.setItem('rw_favs', JSON.stringify([...favs]));
-  renderMarkers(); renderList();
-  // reopen popup for current marker
-  const idx = stations.findIndex(s=>s.name===name);
-  if (idx>=0) setTimeout(()=>{ if(markers[idx]) markers[idx].openPopup(); },60);
-}
-
-let current = null, playing = false, markers = {}, map;
+let favs = new Set(); try { favs = new Set(JSON.parse(localStorage.getItem('rw_favs')||'[]')); } catch(e) {}
+let current = null, playing = false;
 const audio = document.getElementById('audio-el');
 
-function initMap() {
-  map = L.map('map',{center:[25,10],zoom:2,zoomControl:true});
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:18}).addTo(map);
-  renderMarkers();
+function toggleFav(name) {
+  favs.has(name) ? favs.delete(name) : favs.add(name);
+  localStorage.setItem('rw_favs', JSON.stringify([...favs]));
+  renderList();
+  drawGlobe();
+  // refresh heart in open popup without closing it
+  if (openStation?.name === name) {
+    const btn = document.querySelector('.pop-fav');
+    if (btn) {
+      const isFav = favs.has(name);
+      btn.className = 'pop-fav' + (isFav?' on':'');
+      btn.textContent = isFav ? '♥' : '♡';
+      btn.title = isFav ? 'Remove from favourites' : 'Add to favourites';
+    }
+  }
 }
 
-function mkIcon(isPlaying, isFav) {
-  return L.divIcon({
-    className:'',
-    html:`<div class="rm${isPlaying?' playing':''}${isFav?' fav':''}"></div>`,
-    iconSize:[12,12],iconAnchor:[6,6],popupAnchor:[0,-10]
-  });
-}
-
-function buildPopup(s,i) {
-  const isP = current?.name===s.name;
-  const isFav = favs.has(s.name);
-  let btnLabel = '▶ Play', btnClass = '';
-  if (isP && playing) { btnLabel = '■ Stop'; btnClass = 'stop'; }
-  const webLink = s.web ? `<a href="${s.web}" target="_blank" style="font-size:10px;color:var(--accent);text-decoration:none;opacity:.7;display:block;margin-bottom:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.7">${s.web.replace(/^https?:\/\//,'')}</a>` : '';
-  return `<div class="pp">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:2px">
-      <div class="pname" style="margin:0">${s.name}</div>
-      <button class="fav-btn ${isFav?'on':''}" onclick="toggleFav('${s.name.replace(/'/g,"\\'")}');event.stopPropagation()" title="${isFav?'Remove from favourites':'Add to favourites'}">${isFav?'💚':'🤍'}</button>
-    </div>
-    <div class="ploc">${s.city}, ${s.country}</div>
-    <div class="pdesc">${s.desc}</div>
-    ${webLink}
-    <button class="pplay ${btnClass}" id="pb${i}" onclick="handlePlay(${i})">${btnLabel}</button>
-  </div>`;
-}
-
-function renderMarkers() {
-  Object.values(markers).forEach(m => { try { map.removeLayer(m); } catch(e){} });
-  markers = {};
-  stations.forEach((s,i) => {
-    const isP = current?.name===s.name&&playing;
-    const isFav = favs.has(s.name);
-    const m = L.marker([s.lat,s.lng],{icon:mkIcon(isP, isFav)}).addTo(map);
-    m.bindPopup(buildPopup(s,i),{maxWidth:240});
-    markers[i] = m;
-  });
-}
-
-async function handlePlay(idx) {
+// ── Audio ─────────────────────────────────────────────────────────────────
+async function playStation(idx) {
   const s = stations[idx];
-  const btn = document.getElementById(`pb${idx}`);
-  if (current?.name===s.name && playing) { audio.pause(); return; }
-  if (btn) { btn.className='pplay loading'; btn.textContent='⟳ Loading…'; }
+  const btn = document.getElementById('pop-playbtn');
+  if (current?.name === s.name && playing) { audio.pause(); return; }
+  if (btn) { btn.className='pop-play loading'; btn.textContent='⟳ loading…'; }
   const url = await getStream(s);
   if (!url) {
-    if (btn) { btn.className='pplay'; btn.textContent='✕ Stream not found'; }
-    document.getElementById('pmeta').textContent='⚠ Stream not found for '+s.name;
+    if (btn) { btn.className='pop-play'; btn.textContent='✕ stream not found'; }
+    document.getElementById('pmeta').textContent = '⚠ stream not found — try another';
     return;
   }
   current = s;
-  audio.src = url;
-  audio.volume = parseFloat(document.getElementById('vol').value);
+  audio.src = url; audio.volume = parseFloat(document.getElementById('vol').value);
   try { await audio.play(); playing = true; }
-  catch(e) { if (btn) { btn.className='pplay'; btn.textContent='✕ Blocked — try another'; } return; }
+  catch(e) { if(btn){btn.className='pop-play';btn.textContent='✕ blocked by browser';} return; }
   document.getElementById('pname').textContent = s.name;
-  document.getElementById('pmeta').textContent = s.city+', '+s.country;
-  updateUI(); renderMarkers(); renderList();
-  setTimeout(()=>{ if(markers[idx]) markers[idx].openPopup(); },80);
+  document.getElementById('pmeta').textContent = s.city + ', ' + s.country;
+  updatePlayerUI(); renderList(); drawGlobe();
+  if(btn){ btn.className='pop-play stop'; btn.textContent='■ stop'; }
 }
 
 function togglePlay() {
   if (!current) return;
   if (playing) audio.pause(); else audio.play();
 }
+audio.addEventListener('play', ()=>{ playing=true; updatePlayerUI(); renderList(); drawGlobe(); });
+audio.addEventListener('pause', ()=>{ playing=false; updatePlayerUI(); renderList(); drawGlobe(); updatePopupBtn(); });
+audio.addEventListener('error', ()=>{ document.getElementById('pmeta').textContent='⚠ stream unavailable'; playing=false; updatePlayerUI(); });
 
-audio.addEventListener('play',()=>{ playing=true; updateUI(); renderMarkers(); renderList(); });
-audio.addEventListener('pause',()=>{ playing=false; updateUI(); renderMarkers(); renderList(); });
-audio.addEventListener('error',()=>{ document.getElementById('pmeta').textContent='⚠ Stream unavailable'; playing=false; updateUI(); });
-
-function updateUI() {
+function updatePlayerUI() {
   document.getElementById('picon').innerHTML = playing
     ? '<rect x="1" y="0" width="3" height="12"/><rect x="6" y="0" width="3" height="12"/>'
     : '<polygon points="0,0 10,6 0,12"/>';
   document.getElementById('eq').classList.toggle('on', playing);
 }
+function updatePopupBtn() {
+  const btn = document.getElementById('pop-playbtn');
+  if (!btn || !current) return;
+  const isP = current.name === openStation?.name;
+  if(isP && playing){ btn.className='pop-play stop'; btn.textContent='■ stop'; }
+  else { btn.className='pop-play'; btn.textContent='▶ play'; }
+}
 
+// ── Sidebar ────────────────────────────────────────────────────────────────
 function renderList() {
   const q = document.getElementById('search').value.toLowerCase();
   const all = stations.map((s,i)=>({...s,_i:i})).filter(s=>
     !q || s.name.toLowerCase().includes(q) || s.city.toLowerCase().includes(q) || s.country.toLowerCase().includes(q)
   );
-  const favList = all.filter(s => favs.has(s.name));
-  const rest = all.filter(s => !favs.has(s.name));
-  const favSection = favList.length ? `<div class="fav-sep">♥ Favourites</div>` + favList.map(s => renderItem(s)).join('') : '';
-  const restSection = rest.map(s => renderItem(s)).join('');
+  const favList = all.filter(s=>favs.has(s.name));
+  const rest = all.filter(s=>!favs.has(s.name));
+  const mkItem = s => {
+    const isFav = favs.has(s.name);
+    const isAct = current?.name===s.name;
+    return `<div class="si ${isAct?'active':''} ${isFav?'faved':''}" onclick="sidebarClick(${s._i})">
+      <div class="sd"></div>
+      <div class="sinfo"><div class="sn">${s.name}</div><div class="sl">${s.city}, ${s.country}</div></div>
+      <button class="fheart ${isFav?'on':''}" onclick="toggleFav('${s.name.replace(/'/g,"\\'")}');event.stopPropagation()" title="${isFav?'Remove':'Favourite'}">♥</button>
+    </div>`;
+  };
+  const favSec = favList.length ? `<div class="fav-sep">♥ favourites</div>${favList.map(mkItem).join('')}` : '';
   document.getElementById('list').innerHTML =
-    `<div class="sc">${all.length} station${all.length!==1?'s':''}</div>` + favSection + restSection;
+    `<div class="sc">${all.length} stations</div>${favSec}${rest.map(mkItem).join('')}`;
 }
 
-function renderItem(s) {
+function sidebarClick(idx) {
+  const s = stations[idx];
+  rotateTo(s.lng, s.lat, ()=>openPopup(idx));
+}
+
+// ── Globe (D3) ─────────────────────────────────────────────────────────────
+const canvas = document.getElementById('globe-canvas');
+const ctx = canvas.getContext('2d');
+let width, height, proj, path, world;
+let rotation = [10, -25];
+let isDragging = false, dragStart = null, rotStart = null;
+let openStation = null, openIdx = null;
+let animFrame = null;
+
+// Hand-drawn feel: slight jitter on land paths
+function sketchPath(d) {
+  // We just use regular path but with rough stroke settings
+  path(d);
+}
+
+async function loadWorld() {
+  const topo = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(r=>r.json());
+  world = topojson.feature(topo, topo.objects.countries);
+  resize();
+  drawGlobe();
+}
+
+function resize() {
+  const wrap = document.getElementById('globe-wrap');
+  width = wrap.clientWidth; height = wrap.clientHeight;
+  canvas.width = width * devicePixelRatio;
+  canvas.height = height * devicePixelRatio;
+  canvas.style.width = width + 'px';
+  canvas.style.height = height + 'px';
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+  const r = Math.min(width, height) * 0.42;
+  proj = d3.geoOrthographic()
+    .scale(r)
+    .translate([width/2, height/2])
+    .clipAngle(90)
+    .rotate(rotation);
+  path = d3.geoPath(proj, ctx);
+}
+
+function drawGlobe() {
+  if (!proj) return;
+  proj.rotate(rotation);
+  ctx.clearRect(0, 0, width, height);
+
+  // Ocean
+  ctx.beginPath(); proj.clipAngle(180); path({type:'Sphere'}); proj.clipAngle(90);
+  ctx.fillStyle = '#0a0f14'; ctx.fill();
+  ctx.beginPath(); path({type:'Sphere'});
+  ctx.strokeStyle = '#1e2a35'; ctx.lineWidth = 1; ctx.stroke();
+
+  // Graticule
+  ctx.beginPath();
+  path(d3.geoGraticule()());
+  ctx.strokeStyle = 'rgba(255,255,255,0.03)'; ctx.lineWidth = .5; ctx.setLineDash([2,4]);
+  ctx.stroke(); ctx.setLineDash([]);
+
+  // Land
+  if (world) {
+    ctx.beginPath(); path(world);
+    ctx.fillStyle = '#1a1a1a'; ctx.fill();
+    ctx.beginPath(); path(world);
+    ctx.strokeStyle = '#2a2a2a'; ctx.lineWidth = .7; ctx.stroke();
+  }
+
+  // Dots
+  stations.forEach((s, i) => {
+    const pt = proj([s.lng, s.lat]);
+    if (!pt) return;
+    const [x, y] = pt;
+
+    const isFav = favs.has(s.name);
+    const isPlaying = current?.name === s.name && playing;
+    const isSelected = openIdx === i;
+    const isOpen = openIdx === i;
+
+    // Playing pulse
+    if (isPlaying) {
+      ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(212,43,43,0.12)'; ctx.fill();
+      ctx.beginPath(); ctx.arc(x, y, 6.5, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(212,43,43,0.22)'; ctx.fill();
+    }
+
+    // Selected ring
+    if (isSelected && !isPlaying) {
+      ctx.beginPath(); ctx.arc(x, y, 7, 0, Math.PI*2);
+      ctx.strokeStyle = 'rgba(212,43,43,0.5)'; ctx.lineWidth = 1.5; ctx.stroke();
+    }
+
+    // Main dot
+    const r = isOpen ? 5 : 4;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2);
+    if (isPlaying) ctx.fillStyle = '#d42b2b';
+    else if (isFav) ctx.fillStyle = '#d42b2b';
+    else if (isSelected) ctx.fillStyle = '#ffffff';
+    else ctx.fillStyle = 'rgba(200,200,200,0.7)';
+    ctx.fill();
+
+    // Dot border
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2);
+    ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.lineWidth = 1; ctx.stroke();
+  });
+}
+
+// ── Popup ──────────────────────────────────────────────────────────────────
+function openPopup(idx) {
+  const s = stations[idx];
+  openStation = s; openIdx = idx;
+  const isPlaying = current?.name === s.name && playing;
   const isFav = favs.has(s.name);
-  const isActive = current?.name===s.name;
-  return `<div class="si ${isActive?'active':''}" onclick="flyTo(${s._i})">
-    <div class="sd" style="${isFav?'background:#1D9E75;opacity:1':''}"></div>
-    <div class="sinfo"><div class="sn">${s.name}</div><div class="sl">${s.city}, ${s.country}</div></div>
-    <button class="fav-btn ${isFav?'on':''}" onclick="toggleFav('${s.name.replace(/'/g,"\\'")}');event.stopPropagation()" title="Favourite">${isFav?'💚':'🤍'}</button>
-  </div>`;
+  const webStr = s.web ? `<a class="pop-web" href="${s.web}" target="_blank">${s.web.replace(/^https?:\/\//,'')}</a>` : '';
+  const btnClass = isPlaying ? 'stop' : '';
+  const btnLabel = isPlaying ? '■ stop' : '▶ play';
+  const safeName = s.name.replace(/'/g,"\\'");
+  document.getElementById('popup-inner').innerHTML = `
+    <div class="pop-header">
+      <div class="pop-name">${s.name}</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <div class="pop-loc" style="margin:0;flex:1">${s.city}, ${s.country}</div>
+      <button class="pop-fav ${isFav?'on':''}" onclick="toggleFav('${safeName}')" title="${isFav?'Remove from favourites':'Add to favourites'}">${isFav?'♥':'♡'}</button>
+    </div>
+    <div class="pop-desc">${s.desc}</div>
+    ${webStr}
+    <button class="pop-play ${btnClass}" id="pop-playbtn" onclick="playStation(${idx})">${btnLabel}</button>
+  `;
+  // Position popup near dot
+  const [x, y] = proj([s.lng, s.lat]);
+  const popup = document.getElementById('popup');
+  popup.style.display = 'block';
+  const pw = 230, ph = 220;
+  let left = x + 14, top = y - 60;
+  if (left + pw > width) left = x - pw - 14;
+  if (top + ph > height) top = height - ph - 10;
+  if (top < 10) top = 10;
+  popup.style.left = left + 'px'; popup.style.top = top + 'px';
+  drawGlobe();
 }
 
-function flyTo(idx) {
-  map.flyTo([stations[idx].lat,stations[idx].lng],6,{duration:1.2});
-  setTimeout(()=>{ if(markers[idx]) markers[idx].openPopup(); },1300);
+function closePopup() {
+  document.getElementById('popup').style.display = 'none';
+  openStation = null; openIdx = null; drawGlobe();
 }
 
+// ── Globe interaction ──────────────────────────────────────────────────────
+canvas.addEventListener('mousedown', e => {
+  isDragging = false; dragStart = [e.clientX, e.clientY]; rotStart = [...rotation];
+});
+canvas.addEventListener('mousemove', e => {
+  if (!dragStart) return;
+  const dx = e.clientX - dragStart[0], dy = e.clientY - dragStart[1];
+  if (Math.abs(dx) > 3 || Math.abs(dy) > 3) isDragging = true;
+  if (!isDragging) return;
+  const sens = 0.3;
+  rotation = [rotStart[0] + dx * sens, Math.max(-85, Math.min(85, rotStart[1] - dy * sens))];
+  drawGlobe();
+});
+canvas.addEventListener('mouseup', e => {
+  if (!isDragging) handleClick(e);
+  dragStart = null;
+});
+canvas.addEventListener('mouseleave', ()=>{ dragStart = null; });
+
+// Touch
+canvas.addEventListener('touchstart', e=>{ e.preventDefault(); const t=e.touches[0]; dragStart=[t.clientX,t.clientY]; rotStart=[...rotation]; isDragging=false; },{passive:false});
+canvas.addEventListener('touchmove', e=>{ e.preventDefault(); const t=e.touches[0]; const dx=t.clientX-dragStart[0],dy=t.clientY-dragStart[1]; if(Math.abs(dx)>3||Math.abs(dy)>3)isDragging=true; if(!isDragging)return; rotation=[rotStart[0]+dx*.3,Math.max(-85,Math.min(85,rotStart[1]-dy*.3))]; drawGlobe(); },{passive:false});
+canvas.addEventListener('touchend', e=>{ if(!isDragging)handleClick(e.changedTouches[0]); dragStart=null; },{passive:false});
+
+// Zoom
+canvas.addEventListener('wheel', e=>{
+  e.preventDefault();
+  const r = proj.scale() * (e.deltaY>0 ? 0.9 : 1.1);
+  proj.scale(Math.max(80, Math.min(width, r)));
+  drawGlobe();
+},{passive:false});
+
+function handleClick(e) {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  let closest = null, minD = 14;
+  stations.forEach((s, i) => {
+    const pt = proj([s.lng, s.lat]);
+    if (!pt) return;
+    const d = Math.hypot(pt[0]-mx, pt[1]-my);
+    if (d < minD) { minD=d; closest=i; }
+  });
+  if (closest !== null) openPopup(closest);
+  else closePopup();
+}
+
+function rotateTo(lng, lat, cb) {
+  const target = [-lng, -lat];
+  const start = [...rotation];
+  const t0 = performance.now();
+  const dur = 900;
+  function step(t) {
+    const p = Math.min(1, (t-t0)/dur);
+    const ease = p<.5 ? 2*p*p : -1+(4-2*p)*p;
+    rotation = [start[0]+(target[0]-start[0])*ease, start[1]+(target[1]-start[1])*ease];
+    drawGlobe();
+    if(p<1) requestAnimationFrame(step); else { rotation=target; if(cb) cb(); }
+  }
+  requestAnimationFrame(step);
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────
 function openModal() { document.getElementById('modal-overlay').classList.add('open'); }
 function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); document.getElementById('merr').style.display='none'; document.getElementById('rblist').innerHTML=''; }
 
@@ -462,14 +740,23 @@ function saveStation() {
     stream, web:document.getElementById('mweb').value.trim(),
     desc:document.getElementById('mdesc').value.trim()||'User-added station.',
   };
-  custom.push(ns); stations = [...BUILT_IN,...custom];
+  custom.push(ns); stations=[...BUILT_IN,...custom];
   localStorage.setItem('rw_custom',JSON.stringify(custom));
-  closeModal(); renderMarkers(); renderList();
+  closeModal(); renderList(); drawGlobe();
   ['mname','mcity','mcountry','mstream','mweb','mlat','mlng','mdesc'].forEach(id=>document.getElementById(id).value='');
 }
 
 document.getElementById('modal-overlay').addEventListener('click',e=>{ if(e.target===document.getElementById('modal-overlay')) closeModal(); });
-window.addEventListener('DOMContentLoaded',()=>{ renderList(); initMap(); });
+window.addEventListener('resize',()=>{ resize(); drawGlobe(); });
+window.addEventListener('DOMContentLoaded',()=>{ renderList(); loadWorld(); });
+
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  const btn = document.getElementById('toggle-sidebar');
+  sb.classList.toggle('hidden');
+  btn.textContent = sb.classList.contains('hidden') ? '▶' : '☰';
+  setTimeout(()=>{ resize(); drawGlobe(); }, 260);
+}
 </script>
 </body>
 </html>
