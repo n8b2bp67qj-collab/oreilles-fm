@@ -645,17 +645,42 @@ function openPopup(idx) {
     ${webStr}
     <button class="pop-play ${btnClass}" id="pop-playbtn" onclick="playStation(${idx})">${btnLabel}</button>
   `;
-  // Position popup near dot
-  const [x, y] = proj([s.lng, s.lat]);
+
+  // On mobile: auto-hide sidebar so popup is never blocked
+  const isMobile = window.innerWidth < 600;
+  if (isMobile) {
+    const sb = document.getElementById('sidebar');
+    const btn = document.getElementById('toggle-sidebar');
+    if (!sb.classList.contains('hidden')) {
+      sb.classList.add('hidden');
+      btn.textContent = '▶';
+      setTimeout(()=>{ resize(); drawGlobe(); positionPopup(); }, 260);
+      return;
+    }
+  }
+  positionPopup();
+  drawGlobe();
+}
+
+function positionPopup() {
+  if (openIdx === null) return;
+  const s = stations[openIdx];
+  const pt = proj([s.lng, s.lat]);
+  if (!pt) return;
+  const [x, y] = pt;
   const popup = document.getElementById('popup');
   popup.style.display = 'block';
-  const pw = 230, ph = 220;
-  let left = x + 14, top = y - 60;
-  if (left + pw > width) left = x - pw - 14;
-  if (top + ph > height) top = height - ph - 10;
-  if (top < 10) top = 10;
-  popup.style.left = left + 'px'; popup.style.top = top + 'px';
-  drawGlobe();
+  const pw = 230, ph = 240;
+  const margin = 10;
+  // Try right of dot first, then left
+  let left = x + 16;
+  if (left + pw > width - margin) left = x - pw - 16;
+  left = Math.max(margin, Math.min(width - pw - margin, left));
+  // Vertically centered on dot, clamped
+  let top = y - ph / 2;
+  top = Math.max(margin, Math.min(height - ph - margin, top));
+  popup.style.left = left + 'px';
+  popup.style.top = top + 'px';
 }
 
 function closePopup() {
@@ -682,10 +707,51 @@ canvas.addEventListener('mouseup', e => {
 });
 canvas.addEventListener('mouseleave', ()=>{ dragStart = null; });
 
-// Touch
-canvas.addEventListener('touchstart', e=>{ e.preventDefault(); const t=e.touches[0]; dragStart=[t.clientX,t.clientY]; rotStart=[...rotation]; isDragging=false; },{passive:false});
-canvas.addEventListener('touchmove', e=>{ e.preventDefault(); const t=e.touches[0]; const dx=t.clientX-dragStart[0],dy=t.clientY-dragStart[1]; if(Math.abs(dx)>3||Math.abs(dy)>3)isDragging=true; if(!isDragging)return; rotation=[rotStart[0]+dx*.3,Math.max(-85,Math.min(85,rotStart[1]-dy*.3))]; drawGlobe(); },{passive:false});
-canvas.addEventListener('touchend', e=>{ if(!isDragging)handleClick(e.changedTouches[0]); dragStart=null; },{passive:false});
+// Touch — drag + pinch zoom
+let pinchStartDist = null, pinchStartScale = null;
+
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  if (e.touches.length === 1) {
+    const t = e.touches[0];
+    dragStart = [t.clientX, t.clientY]; rotStart = [...rotation]; isDragging = false;
+    pinchStartDist = null;
+  } else if (e.touches.length === 2) {
+    dragStart = null;
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    pinchStartDist = Math.hypot(dx, dy);
+    pinchStartScale = proj.scale();
+  }
+}, {passive:false});
+
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (e.touches.length === 2 && pinchStartDist) {
+    // Pinch zoom
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    const dist = Math.hypot(dx, dy);
+    const scale = pinchStartScale * (dist / pinchStartDist);
+    proj.scale(Math.max(80, Math.min(width * 1.5, scale)));
+    drawGlobe();
+  } else if (e.touches.length === 1 && dragStart) {
+    // Single finger rotate
+    const t = e.touches[0];
+    const dx = t.clientX - dragStart[0], dy = t.clientY - dragStart[1];
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) isDragging = true;
+    if (!isDragging) return;
+    rotation = [rotStart[0] + dx * .3, Math.max(-85, Math.min(85, rotStart[1] - dy * .3))];
+    drawGlobe();
+  }
+}, {passive:false});
+
+canvas.addEventListener('touchend', e => {
+  if (e.touches.length === 0) {
+    if (!isDragging && pinchStartDist === null) handleClick(e.changedTouches[0]);
+    dragStart = null; pinchStartDist = null;
+  }
+}, {passive:false});
 
 // Zoom
 canvas.addEventListener('wheel', e=>{
