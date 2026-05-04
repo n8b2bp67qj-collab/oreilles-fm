@@ -77,7 +77,7 @@ body {
 
 /* ── Sidebar toggle ── */
 #sidebar {
-  width: 265px; flex-shrink: 0; background: var(--surface);
+  width: 230px; flex-shrink: 0; background: var(--surface);
   border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden;
   transition: width .25s ease, opacity .25s ease;
 }
@@ -141,14 +141,14 @@ body {
 .pop-web { font-size: 10px; color: #aaa; text-decoration: none; display: block; margin-bottom: 10px; opacity: .6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: opacity .15s; }
 .pop-web:hover { opacity: 1; color: var(--text); }
 .pop-play {
-  width: 100%; padding: 8px; background: var(--text); color: #000;
-  border: none; border-radius: 1px; font-family: 'Syne', sans-serif;
-  font-weight: 700; font-size: 12px; cursor: pointer; transition: opacity .15s;
-  letter-spacing: .3px;
+  width: 100%; padding: 8px 10px; background: transparent; color: var(--muted);
+  border: 1px solid var(--border); border-radius: 1px;
+  font-family: 'Space Mono', monospace; font-size: 11px; cursor: pointer;
+  transition: color .15s, border-color .15s; text-align: left; letter-spacing: .3px;
 }
-.pop-play:hover { opacity: .85; }
-.pop-play.loading { background: var(--surface2); color: var(--muted); cursor: default; }
-.pop-play.stop { background: var(--red); color: #fff; }
+.pop-play:hover { color: var(--text); border-color: var(--text); }
+.pop-play.loading { color: var(--muted); border-color: var(--border); cursor: default; }
+.pop-play.stop { color: var(--red); border-color: var(--red); }
 #popup-close {
   position: absolute; top: 8px; right: 8px; background: none; border: none;
   color: var(--muted); cursor: pointer; font-size: 15px; line-height: 1;
@@ -186,12 +186,20 @@ body {
 audio { display: none; }
 
 @media (max-width: 550px) {
-  #header { padding: 8px 10px; gap: 8px; }
+  #header { padding: 8px 10px; gap: 8px; flex-wrap: wrap; }
   #logo { font-size: 14px; }
-  #player { padding: 6px 8px; gap: 6px; }
+  #player { padding: 6px 8px; gap: 6px; flex: 1; min-width: 0; }
   .vw { display: none; }
-  #addbtn { font-size: 10px; padding: 6px 8px; }
   .pm { display: none; }
+  #addbtn { display: none; }
+  #mobile-add { display: flex; }
+}
+#mobile-add {
+  display: none; position: fixed; bottom: 18px; right: 18px; z-index: 200;
+  background: var(--surface); border: 1px dashed var(--border);
+  color: var(--muted); padding: 10px 14px; border-radius: 2px;
+  font-family: 'Space Mono', monospace; font-size: 11px; cursor: pointer;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.5);
 }
 </style>
 </head>
@@ -216,6 +224,7 @@ audio { display: none; }
   </div>
   <button id="addbtn" onclick="openModal()">+ add radio</button>
 </div>
+<button id="mobile-add" onclick="openModal()">+ add radio</button>
 
 <div id="main">
   <div id="sidebar">
@@ -532,7 +541,7 @@ function sidebarClick(idx) {
 const canvas = document.getElementById('globe-canvas');
 const ctx = canvas.getContext('2d');
 let width, height, proj, path, world;
-let rotation = [10, -25];
+let rotation = [-10, -45];
 let isDragging = false, dragStart = null, rotStart = null;
 let openStation = null, openIdx = null;
 let animFrame = null;
@@ -833,7 +842,14 @@ function saveStation() {
 
 document.getElementById('modal-overlay').addEventListener('click',e=>{ if(e.target===document.getElementById('modal-overlay')) closeModal(); });
 window.addEventListener('resize',()=>{ resize(); drawGlobe(); });
-window.addEventListener('DOMContentLoaded',()=>{ renderList(); loadWorld(); });
+window.addEventListener('DOMContentLoaded',()=>{
+  // Start sidebar hidden on mobile
+  if (window.innerWidth < 600) {
+    document.getElementById('sidebar').classList.add('hidden');
+    document.getElementById('toggle-sidebar').textContent = '▶';
+  }
+  renderList(); loadWorld();
+});
 
 function toggleSidebar() {
   const sb = document.getElementById('sidebar');
