@@ -184,6 +184,15 @@ body {
 #rbgo:hover { border-color: var(--text); color: var(--text); }
 
 audio { display: none; }
+
+@media (max-width: 550px) {
+  #header { padding: 8px 10px; gap: 8px; }
+  #logo { font-size: 14px; }
+  #player { padding: 6px 8px; gap: 6px; }
+  .vw { display: none; }
+  #addbtn { font-size: 10px; padding: 6px 8px; }
+  .pm { display: none; }
+}
 </style>
 </head>
 <body>
@@ -583,8 +592,12 @@ function drawGlobe() {
     ctx.strokeStyle = '#2a2a2a'; ctx.lineWidth = .7; ctx.stroke();
   }
 
-  // Dots
+  // Dots — only on visible hemisphere
   stations.forEach((s, i) => {
+    // Cull back-facing stations: angle from center of view > 90° means behind the globe
+    const dist = d3.geoDistance([s.lng, s.lat], [-rotation[0], -rotation[1]]);
+    if (dist > Math.PI / 2) return; // behind the globe, skip
+
     const pt = proj([s.lng, s.lat]);
     if (!pt) return;
     const [x, y] = pt;
@@ -608,18 +621,21 @@ function drawGlobe() {
       ctx.strokeStyle = 'rgba(212,43,43,0.5)'; ctx.lineWidth = 1.5; ctx.stroke();
     }
 
+    // Fade dots near the horizon (dist close to PI/2)
+    const edgeFade = Math.max(0, 1 - (dist / (Math.PI / 2)) * 0.5);
+
     // Main dot
     const r = isOpen ? 5 : 4;
     ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2);
-    if (isPlaying) ctx.fillStyle = '#d42b2b';
-    else if (isFav) ctx.fillStyle = '#d42b2b';
-    else if (isSelected) ctx.fillStyle = '#ffffff';
-    else ctx.fillStyle = 'rgba(200,200,200,0.7)';
+    if (isPlaying) ctx.fillStyle = `rgba(212,43,43,${edgeFade})`;
+    else if (isFav) ctx.fillStyle = `rgba(212,43,43,${edgeFade})`;
+    else if (isSelected) ctx.fillStyle = `rgba(255,255,255,${edgeFade})`;
+    else ctx.fillStyle = `rgba(200,200,200,${0.7 * edgeFade})`;
     ctx.fill();
 
     // Dot border
     ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2);
-    ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.strokeStyle = `rgba(0,0,0,${0.6 * edgeFade})`; ctx.lineWidth = 1; ctx.stroke();
   });
 }
 
@@ -764,8 +780,11 @@ canvas.addEventListener('wheel', e=>{
 function handleClick(e) {
   const rect = canvas.getBoundingClientRect();
   const mx = e.clientX - rect.left, my = e.clientY - rect.top;
-  let closest = null, minD = 14;
+  let closest = null, minD = 16;
   stations.forEach((s, i) => {
+    // Skip stations on the back of the globe
+    const dist = d3.geoDistance([s.lng, s.lat], [-rotation[0], -rotation[1]]);
+    if (dist > Math.PI / 2) return;
     const pt = proj([s.lng, s.lat]);
     if (!pt) return;
     const d = Math.hypot(pt[0]-mx, pt[1]-my);
