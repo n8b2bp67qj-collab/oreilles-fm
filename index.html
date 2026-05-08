@@ -211,6 +211,13 @@ body {
 
 audio { display: none; }
 
+#version-tag {
+  position: fixed; bottom: 6px; right: 8px;
+  font-family: 'Space Mono', monospace; font-size: 8px;
+  color: var(--muted); opacity: .55; letter-spacing: .5px;
+  pointer-events: none; z-index: 50; text-transform: uppercase;
+}
+
 @media (max-width: 550px) {
   #header { padding: 8px 10px; gap: 8px; flex-wrap: wrap; }
   #logo { font-size: 14px; }
@@ -304,6 +311,8 @@ audio { display: none; }
 </div>
 
 <audio id="audio-el"></audio>
+
+<div id="version-tag">v0.2 · alpha</div>
 
 <script src="https://unpkg.com/d3@7/dist/d3.min.js"></script>
 <script src="https://unpkg.com/topojson-client@3/dist/topojson-client.min.js"></script>
