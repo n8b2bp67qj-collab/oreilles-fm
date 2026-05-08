@@ -193,7 +193,7 @@ body {
 .mrow { display: flex; gap: 12px; }
 .mrow .mf { flex: 1; }
 .mbtns { display: flex; gap: 8px; margin-top: 16px; }
-.mbtns button { flex: 1; padding: 9px; border-radius: 1px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 12px; cursor: pointer; border: none; }
+.mbtns button { flex: 1; padding: 9px 9px 12px; border-radius: 1px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 12px; line-height: 1.4; cursor: pointer; border: none; }
 #mcancel { background: var(--surface2); color: var(--muted); border: 1px dashed var(--border); }
 #msave { background: var(--text); color: #000; }
 #mdelete { background: transparent; color: var(--red); border: 1px dashed var(--red); display: none; }
@@ -474,15 +474,47 @@ function fillRB(enc) {
 
 // ── State ─────────────────────────────────────────────────────────────────
 let custom = []; try { custom = JSON.parse(localStorage.getItem('rw_custom')||'[]'); } catch(e) {}
-let stations = [...BUILT_IN, ...custom];
+let hiddenBuiltIns = new Set();
+try { hiddenBuiltIns = new Set(JSON.parse(localStorage.getItem('rw_hidden_builtin')||'[]')); } catch(e) {}
+let builtinOverrides = {};
+try { builtinOverrides = JSON.parse(localStorage.getItem('rw_overrides')||'{}'); } catch(e) {}
+
+let stations = [];
+function rebuildStations() {
+  const visible = [];
+  for (const b of BUILT_IN) {
+    if (hiddenBuiltIns.has(b.name)) continue;
+    visible.push(builtinOverrides[b.name] || b);
+  }
+  stations = [...visible, ...custom];
+}
+rebuildStations();
+
 let favs = new Set(); try { favs = new Set(JSON.parse(localStorage.getItem('rw_favs')||'[]')); } catch(e) {}
 let deadStations = new Set(); // names of stations whose stream couldn't be resolved
 let current = null, playing = false;
-let editingName = null; // name of station being edited (null = adding)
+let editingName = null;            // name of station being edited (null = adding)
+let editingType = null;            // 'custom' | 'builtin' | null
+let editingBuiltinKey = null;      // for built-in edits: the original BUILT_IN.name being overridden
 const audio = document.getElementById('audio-el');
 
 function isCustom(s) {
   return custom.some(c => c.name === s.name);
+}
+// Returns the original BUILT_IN name a station maps to (direct or via override), or null.
+function builtinKeyFor(stationName) {
+  // Direct match
+  if (BUILT_IN.some(b => b.name === stationName) && !custom.some(c => c.name === stationName)) {
+    // Could also be shadowed by override under same name
+    if (!builtinOverrides[stationName] || builtinOverrides[stationName].name === stationName) return stationName;
+  }
+  // Indirect via override (renamed built-in)
+  for (const k of Object.keys(builtinOverrides)) {
+    if (builtinOverrides[k].name === stationName) return k;
+  }
+  // Plain built-in fallback
+  if (BUILT_IN.some(b => b.name === stationName)) return stationName;
+  return null;
 }
 
 function toggleFav(name) {
@@ -639,9 +671,9 @@ function renderList() {
     const isFav = favs.has(s.name);
     const isAct = current?.name===s.name;
     const isDead = deadStations.has(s.name);
-    const isCust = isCustom(s);
     const safeName = s.name.replace(/'/g,"\\'");
-    const editIcon = isCust ? `<button class="icon-btn edit-icon" onclick="openModalEdit('${safeName}');event.stopPropagation()" title="Edit">✎</button>` : '';
+    // Edit icon now shown for ALL stations (built-ins editable via overrides, deletable via hide flag)
+    const editIcon = `<button class="icon-btn edit-icon" onclick="openModalEdit('${safeName}');event.stopPropagation()" title="Edit / delete">✎</button>`;
     return `<div class="si ${isAct?'active':''} ${isFav?'faved':''} ${isDead?'dead':''}" onclick="sidebarClick(${s._i})">
       <div class="sd"></div>
       <div class="sinfo"><div class="sn">${s.name}</div><div class="sl">${s.city}, ${s.country}</div></div>
@@ -749,13 +781,13 @@ function openPopup(idx) {
   openStation = s; openIdx = idx;
   const isPlaying = current?.name === s.name && playing;
   const isFav = favs.has(s.name);
-  const isCust = isCustom(s);
   const isDead = deadStations.has(s.name);
   const webStr = s.web ? `<a class="pop-web" href="${s.web}" target="_blank">${s.web.replace(/^https?:\/\//,'')}</a>` : '';
   const btnClass = isPlaying ? 'stop' : (isDead ? 'dead' : '');
   const btnLabel = isPlaying ? '■ stop' : (isDead ? '✕ stream not found' : '▶ play');
   const safeName = s.name.replace(/'/g,"\\'");
-  const editBtn = isCust ? `<button class="pop-icon" onclick="openModalEdit('${safeName}')" title="Edit station">✎</button>` : '';
+  // Edit icon shown for all stations (built-ins editable via override, deletable via hide flag)
+  const editBtn = `<button class="pop-icon" onclick="openModalEdit('${safeName}')" title="Edit / delete">✎</button>`;
   document.getElementById('popup-inner').innerHTML = `
     <div class="pop-header">
       <div class="pop-name">${s.name}</div>
@@ -904,7 +936,7 @@ let _geoTimer = null;
 let _geoSeq = 0;          // serial number to ignore stale geocode responses
 
 function openModal() {
-  editingName = null;
+  editingName = null; editingType = null; editingBuiltinKey = null;
   _modalGeo = null;
   document.getElementById('mtitle').textContent = '+ add your radio';
   document.getElementById('msave').textContent = 'Add station';
@@ -919,13 +951,16 @@ function openModal() {
 function openModalEdit(stationName) {
   const s = stations.find(x => x.name === stationName);
   if (!s) return;
-  if (!isCustom(s)) {
-    alert('Built-in stations can\'t be edited yet.');
-    return;
-  }
   editingName = stationName;
+  if (isCustom(s)) {
+    editingType = 'custom';
+    editingBuiltinKey = null;
+  } else {
+    editingType = 'builtin';
+    editingBuiltinKey = builtinKeyFor(stationName);
+  }
   _modalGeo = (s.lat || s.lng) ? {lat:s.lat, lng:s.lng} : null;
-  document.getElementById('mtitle').textContent = '✎ edit radio';
+  document.getElementById('mtitle').textContent = editingType === 'builtin' ? '✎ edit radio (built-in)' : '✎ edit radio';
   document.getElementById('msave').textContent = 'Save changes';
   document.getElementById('mdelete').style.display = 'block';
   document.getElementById('mname').value = s.name || '';
@@ -943,7 +978,7 @@ function closeModal() {
   document.getElementById('modal-overlay').classList.remove('open');
   document.getElementById('merr').style.display='none';
   document.getElementById('rblist').innerHTML='';
-  editingName = null;
+  editingName = null; editingType = null; editingBuiltinKey = null;
 }
 
 function setGeoStatus(cls, text) {
@@ -1000,34 +1035,48 @@ function saveStation() {
     web: document.getElementById('mweb').value.trim(),
     desc: document.getElementById('mdesc').value.trim() || 'User-added station.',
   };
-  if (editingName) {
+  if (editingName && editingType === 'custom') {
     const i = custom.findIndex(c => c.name === editingName);
     if (i >= 0) custom[i] = ns;
-    // also clear dead-state if name was renamed
+    if (editingName !== name) deadStations.delete(editingName);
+    localStorage.setItem('rw_custom', JSON.stringify(custom));
+  } else if (editingName && editingType === 'builtin') {
+    // Save as override on the original BUILT_IN entry
+    if (editingBuiltinKey) {
+      builtinOverrides[editingBuiltinKey] = ns;
+      localStorage.setItem('rw_overrides', JSON.stringify(builtinOverrides));
+    }
     if (editingName !== name) deadStations.delete(editingName);
   } else {
-    if (custom.some(c => c.name === name) || BUILT_IN.some(b => b.name === name)) {
+    if (stations.some(s => s.name === name)) {
       document.getElementById('merr').textContent = 'A station with that name already exists.';
       document.getElementById('merr').style.display = 'block';
       return;
     }
     custom.push(ns);
+    localStorage.setItem('rw_custom', JSON.stringify(custom));
   }
-  stations = [...BUILT_IN, ...custom];
-  localStorage.setItem('rw_custom', JSON.stringify(custom));
+  rebuildStations();
   closeModal(); renderList(); drawGlobe();
 }
 
 function deleteCurrentEdit() {
   if (!editingName) return;
   if (!confirm(`Delete "${editingName}"?`)) return;
-  custom = custom.filter(c => c.name !== editingName);
-  stations = [...BUILT_IN, ...custom];
+  if (editingType === 'custom') {
+    custom = custom.filter(c => c.name !== editingName);
+    localStorage.setItem('rw_custom', JSON.stringify(custom));
+  } else if (editingType === 'builtin' && editingBuiltinKey) {
+    hiddenBuiltIns.add(editingBuiltinKey);
+    delete builtinOverrides[editingBuiltinKey];
+    localStorage.setItem('rw_hidden_builtin', JSON.stringify([...hiddenBuiltIns]));
+    localStorage.setItem('rw_overrides', JSON.stringify(builtinOverrides));
+  }
   favs.delete(editingName);
   deadStations.delete(editingName);
-  localStorage.setItem('rw_custom', JSON.stringify(custom));
   localStorage.setItem('rw_favs', JSON.stringify([...favs]));
   if (current?.name === editingName) { audio.pause(); current = null; }
+  rebuildStations();
   closePopup();
   closeModal();
   renderList(); drawGlobe();
@@ -1064,7 +1113,6 @@ const PEN_CODE_MAP = {
   "a0441f": [["Guatemala","GT",null,null,null]],
   "a0465f": [["South Sudan","SS",null,null,null]],
   "a0467f": [["Sudan","SD",null,null,null]],
-  "a0499f": [["Brazil","BR",null,null,null]],
   "a0612f": [["Honduras","HN",null,null,null]],
   "a0613f": [["Costa Rica","CR",null,null,null]],
   "a0615f": [["Nicaragua","NI",null,null,null]],
@@ -1167,10 +1215,13 @@ const PEN_CODE_MAP = {
   "a0894f": [["Moldova, Republic of","MD",null,null,null]],
   "a0896f": [["Netherlands","NL",null,null,null]],
   "a0899f": [["Norway","NO",null,null,null]],
-  "a0900f": [["Poland","PL",null,null,null],["Brazil","BR",null,null,null]],
+  "a0900f": [["Poland","PL",null,null,null]],
   "a0902f": [["Portugal","PT",null,null,null]],
   "a0903f": [["Romania","RO",null,null,null]],
-  "a0904f": [["Brazil","BR",null,null,null]],
+  "a0947f": [["Brazil","BR",null,null,null]],
+  "a0949f": [["Brazil","BR",null,null,null]],
+  "a0950f": [["Brazil","BR",null,null,null]],
+  "a0952f": [["Brazil","BR",null,null,null]],
   "a0905f": [["San Marino","SM",null,null,null]],
   "a0907f": [["Slovakia","SK",null,null,null]],
   "a0908f": [["Slovenia","SI",null,null,null]],
@@ -1398,6 +1449,47 @@ function pickStationForTap(iso, regionLabel, regionLat, regionLng) {
   return ranked[_tapCounter % ranked.length];
 }
 
+// ── TTS: announce country name on tap ─────────────────────────────────────
+function cleanCountryForTTS(name) {
+  if (!name) return '';
+  return name
+    .replace(/, (Islamic |Bolivarian |Plurinational |Federated |United |Democratic People's )?Republic( of)?$/i, '')
+    .replace(/, Province of China$/i, '')
+    .replace(/Holy See \(Vatican City State\)/i, 'Vatican')
+    .replace(/, State of$/i, '')
+    .replace(/Lao People's Democratic Republic/i, 'Laos')
+    .replace(/Côte d'Ivoire/i, "Ivory Coast")
+    .replace(/, Federated States of$/i, '')
+    .trim();
+}
+
+let _lastAnnouncedKey = null;
+async function announceCountry(country, region) {
+  const text = region ? `${country}. ${region}` : country;
+  const key = country + '|' + (region || '');
+  // Skip re-announcing the same country on consecutive taps (cycling stations)
+  if (key === _lastAnnouncedKey) return;
+  _lastAnnouncedKey = key;
+  if (!('speechSynthesis' in window)) return;
+  return new Promise((resolve) => {
+    try {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'en-US';
+      u.rate = 1.0;
+      u.pitch = 1.0;
+      u.volume = parseFloat(document.getElementById('vol').value);
+      let done = false;
+      const finish = () => { if (!done) { done = true; resolve(); } };
+      u.onend = finish;
+      u.onerror = finish;
+      window.speechSynthesis.speak(u);
+      // Safety: never block longer than 3.5s
+      setTimeout(finish, 3500);
+    } catch (e) { resolve(); }
+  });
+}
+
 // ── UI: pen-pill flash ────────────────────────────────────────────────────
 function flashPenPill() {
   const pill = document.getElementById('pen-pill');
@@ -1469,6 +1561,10 @@ async function handlePenCode(code) {
   const [country, iso, region, regionLat, regionLng] = resolved;
   console.log('[pen]', code, '→', country, `(${iso})${region ? ' · '+region : ''}`);
 
+  // 1. Announce country (first tap only — repeated taps cycle silently).
+  await announceCountry(cleanCountryForTTS(country), region);
+
+  // 2. Pick the curated station and play (which also kicks off the white-noise hiss).
   const pick = pickStationForTap(iso, region, regionLat, regionLng);
   if (pick) {
     rotateTo(pick.s.lng, pick.s.lat, () => {
