@@ -88,6 +88,55 @@ body {
 }
 #pen-pill.active { color: var(--text); border-color: var(--red); }
 #pen-pill.active .pen-dot { background: var(--red); box-shadow: 0 0 6px var(--red); }
+#pen-pill { cursor: pointer; }
+#pen-pill:hover { color: var(--text); }
+
+/* ── Pen-code assignment popup ── */
+#assign-popup {
+  position: fixed; top: 56px; right: 16px; z-index: 200;
+  background: var(--pop-bg); border: 1px solid var(--border);
+  border-radius: 2px; width: 290px;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.6);
+  display: none; font-family: 'Space Mono', monospace;
+}
+#assign-popup.open { display: block; }
+.assign-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 12px; border-bottom: 1px dashed var(--border);
+  font-size: 9px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted);
+}
+.assign-close {
+  background: none; border: none; color: var(--muted); cursor: pointer;
+  font-size: 16px; padding: 0 4px; line-height: 1;
+}
+.assign-close:hover { color: var(--text); }
+.assign-body { padding: 12px; }
+.assign-code-display {
+  font-family: 'Syne', sans-serif; font-weight: 800; font-size: 16px;
+  color: var(--text); margin-bottom: 4px; letter-spacing: 1px;
+}
+.assign-current {
+  font-size: 10px; color: var(--muted); font-style: italic; margin-bottom: 12px;
+}
+.assign-current.overridden { color: var(--red); }
+#assign-input {
+  width: 100%; background: var(--surface2); border: none;
+  border-bottom: 1px solid var(--border); color: var(--text);
+  padding: 7px 4px; font-family: 'Space Mono', monospace; font-size: 11px;
+  outline: none; margin-bottom: 12px;
+}
+#assign-input:focus { border-bottom-color: var(--red); }
+#assign-input::placeholder { color: var(--muted); font-style: italic; }
+.assign-actions { display: flex; gap: 6px; }
+.assign-actions button {
+  flex: 1; padding: 7px 6px 9px; border-radius: 1px;
+  font-family: 'Syne', sans-serif; font-weight: 700; font-size: 11px;
+  line-height: 1.4; cursor: pointer; border: none;
+}
+#assign-clear { background: transparent; border: 1px dashed var(--border); color: var(--muted); display: none; }
+#assign-clear:hover { color: var(--red); border-color: var(--red); }
+#assign-cancel { background: var(--surface2); color: var(--muted); border: 1px dashed var(--border); }
+#assign-save { background: var(--text); color: #000; }
 
 /* ── Layout ── */
 #main { display: flex; flex: 1; overflow: hidden; }
@@ -312,7 +361,26 @@ audio { display: none; }
 
 <audio id="audio-el"></audio>
 
-<div id="version-tag">v0.2 · alpha</div>
+<!-- Pen-code → country assignment popup -->
+<div id="assign-popup">
+  <div class="assign-head">
+    <span>📍 pen code mapping</span>
+    <button class="assign-close" onclick="closeAssign()" title="Close">×</button>
+  </div>
+  <div class="assign-body">
+    <div class="assign-code-display" id="assign-code-display">—</div>
+    <div class="assign-current" id="assign-current">—</div>
+    <input list="country-list" id="assign-input" placeholder="type country name…" autocomplete="off" onkeydown="if(event.key==='Enter')saveAssign()">
+    <datalist id="country-list"></datalist>
+    <div class="assign-actions">
+      <button id="assign-clear" onclick="clearAssign()" title="Remove your override (revert to built-in)">Reset</button>
+      <button id="assign-cancel" onclick="closeAssign()">Cancel</button>
+      <button id="assign-save" onclick="saveAssign()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="version-tag">v0.3 · alpha</div>
 
 <script src="https://unpkg.com/d3@7/dist/d3.min.js"></script>
 <script src="https://unpkg.com/topojson-client@3/dist/topojson-client.min.js"></script>
@@ -1199,7 +1267,7 @@ const PEN_CODE_MAP = {
   "a0872f": [["Denmark","DK",null,null,null]],
   "a0873f": [["Estonia","EE",null,null,null]],
   "a0875f": [["Finland","FI",null,null,null]],
-  "a0876f": [["France","FR",null,null,null],["Luxembourg","LU",null,null,null]],
+  "a0876f": [["France","FR",null,null,null]],
   "a0877f": [["France","FR","south france",43.45,5.0],["Monaco","MC",null,null,null]],
   "a0878f": [["Georgia","GE",null,null,null]],
   "a0879f": [["Germany","DE",null,null,null]],
@@ -1348,15 +1416,63 @@ const PEN_CODE_MAP = {
   "a1480f": [["Australia","AU","perth",-31.95,115.86]],
 };
 
+// User overrides on top of PEN_CODE_MAP (manual assignments)
+let userPenMap = {};
+try { userPenMap = JSON.parse(localStorage.getItem('rw_user_pen_map')||'{}'); } catch(e) {}
+
+// Comprehensive country list (deduplicated by ISO) — built once from PEN_CODE_MAP.
+// Used by the assign popup datalist.
+const ALL_COUNTRIES = (() => {
+  const seen = new Map();
+  for (const candList of Object.values(PEN_CODE_MAP)) {
+    for (const c of candList) {
+      const [name, iso] = c;
+      if (!seen.has(iso)) seen.set(iso, name);
+    }
+  }
+  return [...seen.entries()]
+    .map(([iso, name]) => ({ iso, name }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+})();
+
 // Round-robin counter for the few codes that map to two countries
 const _penRR = {};
 function resolvePenCode(code) {
+  // User override takes priority
+  if (userPenMap[code]) return userPenMap[code];
   const cands = PEN_CODE_MAP[code];
   if (!cands || !cands.length) return null;
   if (cands.length === 1) return cands[0];
   const i = (_penRR[code] || 0);
   _penRR[code] = i + 1;
   return cands[i % cands.length];
+}
+
+// ── Audio dimming during TTS ──────────────────────────────────────────────
+// Drop the playing radio's volume by ~20 dB (factor of 0.1) for the duration
+// of the country announcement so the spoken name is clearly hearable.
+let _dimRAF = null;
+function rampAudioVolume(target, durationMs) {
+  if (audio.paused) return;
+  if (_dimRAF) cancelAnimationFrame(_dimRAF);
+  const start = audio.volume;
+  const startT = performance.now();
+  function step(t) {
+    const p = Math.min(1, (t - startT) / durationMs);
+    audio.volume = Math.max(0, Math.min(1, start + (target - start) * p));
+    if (p < 1) _dimRAF = requestAnimationFrame(step);
+    else _dimRAF = null;
+  }
+  _dimRAF = requestAnimationFrame(step);
+}
+function dimForAnnouncement() {
+  const sliderVol = parseFloat(document.getElementById('vol').value);
+  const target = sliderVol * 0.1;  // ≈ -20 dB
+  rampAudioVolume(target, 180);
+}
+function restoreAudioVolume() {
+  const sliderVol = parseFloat(document.getElementById('vol').value);
+  rampAudioVolume(sliderVol, 200);
 }
 
 // Map between country name strings used in BUILT_IN/custom and ISO2.
@@ -1499,6 +1615,77 @@ function flashPenPill() {
   pill._fadeT = setTimeout(() => pill.classList.remove('active'), 1200);
 }
 
+// Track the last pen tap so we can re-open the assign popup on demand
+let _lastPenCode = null;
+
+// ── Pen-code → country assignment popup ──────────────────────────────────
+function populateCountryDatalist() {
+  const dl = document.getElementById('country-list');
+  if (!dl || dl._populated) return;
+  dl.innerHTML = ALL_COUNTRIES.map(c => `<option value="${c.name}">${c.iso}</option>`).join('');
+  dl._populated = true;
+}
+
+function openAssignPopup(code) {
+  if (!code) return;
+  populateCountryDatalist();
+  const pop = document.getElementById('assign-popup');
+  document.getElementById('assign-code-display').textContent = code;
+  const override = userPenMap[code];
+  const builtin  = PEN_CODE_MAP[code];
+  const cur = document.getElementById('assign-current');
+  if (override) {
+    cur.className = 'assign-current overridden';
+    cur.textContent = `your override → ${override[0]} (${override[1]})`;
+    document.getElementById('assign-clear').style.display = 'block';
+  } else if (builtin && builtin.length) {
+    cur.className = 'assign-current';
+    cur.textContent = `built-in → ${builtin.map(c => c[0]).join(' / ')}`;
+    document.getElementById('assign-clear').style.display = 'none';
+  } else {
+    cur.className = 'assign-current';
+    cur.textContent = 'unmapped — pick a country';
+    document.getElementById('assign-clear').style.display = 'none';
+  }
+  const inp = document.getElementById('assign-input');
+  inp.value = override ? override[0] : '';
+  pop.classList.add('open');
+  setTimeout(() => inp.focus(), 50);
+}
+
+function closeAssign() {
+  document.getElementById('assign-popup').classList.remove('open');
+}
+
+function clearAssign() {
+  const code = document.getElementById('assign-code-display').textContent;
+  if (!code || code === '—') return;
+  delete userPenMap[code];
+  localStorage.setItem('rw_user_pen_map', JSON.stringify(userPenMap));
+  closeAssign();
+}
+
+function saveAssign() {
+  const code = document.getElementById('assign-code-display').textContent;
+  const name = document.getElementById('assign-input').value.trim();
+  if (!code || code === '—') return;
+  if (!name) return;
+  // Exact match first; if not, case-insensitive lookup
+  let match = ALL_COUNTRIES.find(c => c.name === name);
+  if (!match) match = ALL_COUNTRIES.find(c => c.name.toLowerCase() === name.toLowerCase());
+  if (!match) {
+    alert(`Country "${name}" not recognised.\nPick one from the suggestions, or type the exact name.`);
+    return;
+  }
+  userPenMap[code] = [match.name, match.iso, null, null, null];
+  localStorage.setItem('rw_user_pen_map', JSON.stringify(userPenMap));
+  // Reset announcement key so the new country is spoken even if same as last
+  _lastAnnouncedKey = null;
+  closeAssign();
+  // Replay this code so the user gets immediate playback of the right country
+  handlePenCode(code);
+}
+
 // ── Fallback: fetch top station for ISO from radio-browser and play it ────
 async function playRBForCountry(iso, countryName, regionLat, regionLng) {
   document.getElementById('pname').textContent = countryName;
@@ -1547,24 +1734,31 @@ async function playRBForCountry(iso, countryName, regionLat, regionLng) {
     } catch (e) { /* try next mirror */ }
   }
   stopStatic(150);
+  restoreAudioVolume();   // nothing replaced the playing audio — un-dim it
   document.getElementById('pmeta').textContent = `⚠ no station found for ${countryName}`;
 }
 
 async function handlePenCode(code) {
   flashPenPill();
+  _lastPenCode = code;
   const resolved = resolvePenCode(code);
   if (!resolved) {
     console.log('[pen] unknown code:', code);
-    document.getElementById('pmeta').textContent = `🤷 unknown pen code: ${code}`;
+    document.getElementById('pmeta').textContent = `🤷 unknown pen code: ${code} — pick a country`;
+    openAssignPopup(code);
     return;
   }
   const [country, iso, region, regionLat, regionLng] = resolved;
   console.log('[pen]', code, '→', country, `(${iso})${region ? ' · '+region : ''}`);
 
-  // 1. Announce country (first tap only — repeated taps cycle silently).
+  // 1. Dim previous radio (~-20 dB) so the country announcement is hearable.
+  dimForAnnouncement();
+
+  // 2. Announce country (first tap only — repeated taps cycle silently).
   await announceCountry(cleanCountryForTTS(country), region);
 
-  // 2. Pick the curated station and play (which also kicks off the white-noise hiss).
+  // 3. Pick the curated station and play. playStation/playRBForCountry both
+  //    set audio.volume back to the slider value, so the dim auto-restores.
   const pick = pickStationForTap(iso, region, regionLat, regionLng);
   if (pick) {
     rotateTo(pick.s.lng, pick.s.lat, () => {
@@ -1575,6 +1769,23 @@ async function handlePenCode(code) {
     await playRBForCountry(iso, country, regionLat, regionLng);
   }
 }
+
+// Pen pill click → re-open assign popup with the last tap's code
+document.addEventListener('DOMContentLoaded', () => {
+  const pill = document.getElementById('pen-pill');
+  if (pill) pill.addEventListener('click', () => {
+    if (_lastPenCode) openAssignPopup(_lastPenCode);
+    else {
+      // No tap yet — open with empty placeholder
+      populateCountryDatalist();
+      document.getElementById('assign-code-display').textContent = '—';
+      document.getElementById('assign-current').textContent = 'tap a country with the pen first';
+      document.getElementById('assign-input').value = '';
+      document.getElementById('assign-clear').style.display = 'none';
+      document.getElementById('assign-popup').classList.add('open');
+    }
+  });
+});
 
 // ── Keystroke listener — pen taps come in as a sequence of chars ──────────
 // Supports both QWERTY (US/UK) and AZERTY (French) keyboard layouts.
