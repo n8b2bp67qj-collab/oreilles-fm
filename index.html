@@ -72,6 +72,49 @@ body {
   font-size: 10px; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: all .15s;
 }
 #addbtn:hover { border-color: var(--text); color: var(--text); }
+#exportbtn {
+  background: transparent; border: 1px dashed var(--border); color: var(--muted);
+  padding: 7px 10px; border-radius: 2px; font-family: 'Space Mono', monospace;
+  font-size: 10px; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: all .15s;
+}
+#exportbtn:hover { border-color: var(--text); color: var(--text); }
+@media (max-width: 550px) { #exportbtn { display: none; } }
+
+/* ── Export modal ── */
+#export-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.8); z-index: 9998; display: none; align-items: center; justify-content: center; }
+#export-overlay.open { display: flex; }
+#export-modal {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 2px;
+  padding: 22px; width: 640px; max-width: 95vw; max-height: 90vh; overflow-y: auto;
+  box-shadow: 6px 6px 0 rgba(0,0,0,0.5);
+}
+#export-modal h2 { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 800; margin-bottom: 4px; color: var(--text); }
+.export-sub { font-size: 10px; color: var(--muted); font-style: italic; margin-bottom: 18px; }
+.export-section { border-top: 1px dashed var(--border); padding-top: 14px; margin-top: 14px; }
+.export-section:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+.export-section h3 { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; margin-bottom: 4px; color: var(--text); }
+.export-section .hint { font-size: 10px; color: var(--muted); font-style: italic; margin-bottom: 8px; }
+.export-snippet {
+  width: 100%; height: 130px; background: var(--surface2);
+  border: 1px solid var(--border); color: var(--text); padding: 8px;
+  font-family: 'Space Mono', monospace; font-size: 10px;
+  resize: vertical; outline: none; line-height: 1.4;
+}
+.export-snippet:focus { border-color: var(--red); }
+.export-actions { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.export-actions button {
+  padding: 6px 12px 8px; border-radius: 1px; font-family: 'Syne', sans-serif;
+  font-weight: 700; font-size: 11px; line-height: 1.4; cursor: pointer; border: none;
+  background: var(--surface2); color: var(--muted); border: 1px dashed var(--border);
+}
+.export-actions button:hover { color: var(--text); border-color: var(--text); }
+.export-actions button.primary { background: var(--text); color: #000; border: none; }
+.export-actions button.danger { color: var(--red); border-color: var(--red); }
+.export-actions button.danger:hover { background: var(--red); color: #fff; }
+.export-toast { font-size: 10px; color: #3ecf6e; font-style: italic; margin-left: 4px; opacity: 0; transition: opacity .2s; align-self: center; }
+.export-toast.show { opacity: 1; }
+#export-close { float: right; background: none; border: none; color: var(--muted); cursor: pointer; font-size: 18px; line-height: 1; padding: 0 4px; margin-top: -4px; }
+#export-close:hover { color: var(--text); }
 
 /* ── Pen indicator ── */
 #pen-pill {
@@ -119,14 +162,17 @@ body {
   font-size: 10px; color: var(--muted); font-style: italic; margin-bottom: 12px;
 }
 .assign-current.overridden { color: var(--red); }
-#assign-input {
+#assign-input, #assign-city {
   width: 100%; background: var(--surface2); border: none;
   border-bottom: 1px solid var(--border); color: var(--text);
   padding: 7px 4px; font-family: 'Space Mono', monospace; font-size: 11px;
-  outline: none; margin-bottom: 12px;
+  outline: none; margin-bottom: 8px;
 }
-#assign-input:focus { border-bottom-color: var(--red); }
-#assign-input::placeholder { color: var(--muted); font-style: italic; }
+#assign-input:focus, #assign-city:focus { border-bottom-color: var(--red); }
+#assign-input::placeholder, #assign-city::placeholder { color: var(--muted); font-style: italic; }
+.assign-hint { font-size: 9px; color: var(--muted); font-style: italic; margin-bottom: 10px; min-height: 12px; }
+.assign-hint.ok { color: #3ecf6e; }
+.assign-hint.fail { color: var(--red); }
 .assign-actions { display: flex; gap: 6px; }
 .assign-actions button {
   flex: 1; padding: 7px 6px 9px; border-radius: 1px;
@@ -308,6 +354,7 @@ audio { display: none; }
   <div id="pen-pill" title="SmartGlobe pen ready — tap a country">
     <span class="pen-dot"></span><span>pen</span>
   </div>
+  <button id="exportbtn" onclick="openExport()" title="Export pen mappings + radio stations">⤓ data</button>
   <button id="addbtn" onclick="openModal()">+ add radio</button>
 </div>
 <button id="mobile-add" onclick="openModal()">+ add radio</button>
@@ -361,6 +408,38 @@ audio { display: none; }
 
 <audio id="audio-el"></audio>
 
+<!-- Export modal -->
+<div id="export-overlay">
+  <div id="export-modal">
+    <button id="export-close" onclick="closeExport()" title="Close">×</button>
+    <h2>⤓ export data</h2>
+    <p class="export-sub">Paste these snippets back to Claude (or directly into <code>index.html</code>) to bake your changes into the deployed app for everyone.</p>
+
+    <div class="export-section">
+      <h3>Pen code mappings <span id="pen-count" style="color:var(--muted);font-weight:400;font-size:11px"></span></h3>
+      <p class="hint">Your manual overrides on top of the built-in pen→country map. Paste these into the <code>PEN_CODE_MAP</code> object in index.html (same format).</p>
+      <textarea readonly id="pen-js-snippet" class="export-snippet" spellcheck="false"></textarea>
+      <div class="export-actions">
+        <button class="primary" onclick="copyExport('pen-js-snippet', this)">Copy JS</button>
+        <button onclick="downloadPenCsv()">Download CSV</button>
+        <button class="danger" onclick="clearPenOverrides()">Clear my overrides</button>
+        <span class="export-toast" id="pen-toast">copied</span>
+      </div>
+    </div>
+
+    <div class="export-section">
+      <h3>Radio stations <span id="radio-count" style="color:var(--muted);font-weight:400;font-size:11px"></span></h3>
+      <p class="hint">Full station list (built-ins + your overrides + custom adds, hidden ones excluded). Paste this to replace the <code>BUILT_IN</code> array — your custom stations are baked in too, so you can clear localStorage afterwards.</p>
+      <textarea readonly id="radio-js-snippet" class="export-snippet" spellcheck="false"></textarea>
+      <div class="export-actions">
+        <button class="primary" onclick="copyExport('radio-js-snippet', this)">Copy JS</button>
+        <button onclick="downloadRadioCsv()">Download CSV</button>
+        <span class="export-toast" id="radio-toast">copied</span>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Pen-code → country assignment popup -->
 <div id="assign-popup">
   <div class="assign-head">
@@ -370,8 +449,10 @@ audio { display: none; }
   <div class="assign-body">
     <div class="assign-code-display" id="assign-code-display">—</div>
     <div class="assign-current" id="assign-current">—</div>
-    <input list="country-list" id="assign-input" placeholder="type country name…" autocomplete="off" onkeydown="if(event.key==='Enter')saveAssign()">
+    <input list="country-list" id="assign-input" placeholder="country (type to search)" autocomplete="off" onkeydown="if(event.key==='Enter')saveAssign()">
     <datalist id="country-list"></datalist>
+    <input type="text" id="assign-city" placeholder="city (optional, for narrower targeting)" autocomplete="off" onkeydown="if(event.key==='Enter')saveAssign()">
+    <div class="assign-hint" id="assign-hint"></div>
     <div class="assign-actions">
       <button id="assign-clear" onclick="clearAssign()" title="Remove your override (revert to built-in)">Reset</button>
       <button id="assign-cancel" onclick="closeAssign()">Cancel</button>
@@ -380,7 +461,7 @@ audio { display: none; }
   </div>
 </div>
 
-<div id="version-tag">v0.3 · alpha</div>
+<div id="version-tag">v0.4 · alpha</div>
 
 <script src="https://unpkg.com/d3@7/dist/d3.min.js"></script>
 <script src="https://unpkg.com/topojson-client@3/dist/topojson-client.min.js"></script>
@@ -1420,6 +1501,40 @@ const PEN_CODE_MAP = {
 let userPenMap = {};
 try { userPenMap = JSON.parse(localStorage.getItem('rw_user_pen_map')||'{}'); } catch(e) {}
 
+// ISO2 → continent (for CSV export Continent column)
+const ISO_TO_CONTINENT = {
+  "AD":"Europe","AE":"Asia","AF":"Asia","AG":"North America","AL":"Europe","AM":"Asia","AO":"Africa",
+  "AR":"South America","AS":"Oceania","AT":"Europe","AU":"Oceania","AZ":"Asia","BA":"Europe",
+  "BB":"North America","BD":"Asia","BE":"Europe","BF":"Africa","BG":"Europe","BH":"Asia","BI":"Africa",
+  "BJ":"Africa","BN":"Asia","BO":"South America","BR":"South America","BS":"North America","BT":"Asia",
+  "BW":"Africa","BY":"Europe","BZ":"North America","CA":"North America","CF":"Africa","CG":"Africa",
+  "CH":"Europe","CI":"Africa","CL":"South America","CM":"Africa","CN":"Asia","CO":"South America",
+  "CR":"North America","CU":"North America","CV":"Africa","CY":"Asia","CZ":"Europe","DE":"Europe",
+  "DJ":"Africa","DK":"Europe","DM":"North America","DO":"North America","DZ":"Africa","EC":"South America",
+  "EE":"Europe","EG":"Africa","ER":"Africa","ES":"Europe","ET":"Africa","FI":"Europe","FJ":"Oceania",
+  "FM":"Oceania","FR":"Europe","GA":"Africa","GB":"Europe","GD":"North America","GE":"Asia","GH":"Africa",
+  "GM":"Africa","GN":"Africa","GQ":"Africa","GR":"Europe","GT":"North America","GW":"Africa",
+  "GY":"South America","HN":"North America","HR":"Europe","HT":"North America","HU":"Europe","ID":"Asia",
+  "IE":"Europe","IN":"Asia","IQ":"Asia","IR":"Asia","IS":"Europe","IT":"Europe","JM":"North America",
+  "JO":"Asia","JP":"Asia","KE":"Africa","KG":"Asia","KH":"Asia","KI":"Oceania","KM":"Africa",
+  "KN":"North America","KP":"Asia","KR":"Asia","KW":"Asia","KZ":"Asia","LA":"Asia","LB":"Asia",
+  "LC":"North America","LI":"Europe","LK":"Asia","LR":"Africa","LS":"Africa","LT":"Europe","LU":"Europe",
+  "LV":"Europe","LY":"Africa","MA":"Africa","MC":"Europe","MD":"Europe","ME":"Europe","MG":"Africa",
+  "MH":"Oceania","MK":"Europe","ML":"Africa","MM":"Asia","MN":"Asia","MR":"Africa","MT":"Europe",
+  "MU":"Africa","MV":"Asia","MW":"Africa","MX":"North America","MY":"Asia","MZ":"Africa","NA":"Africa",
+  "NE":"Africa","NG":"Africa","NI":"North America","NL":"Europe","NO":"Europe","NP":"Asia","NR":"Oceania",
+  "NZ":"Oceania","OM":"Asia","PA":"North America","PE":"South America","PG":"Oceania","PH":"Asia",
+  "PK":"Asia","PL":"Europe","PS":"Asia","PT":"Europe","PW":"Oceania","PY":"South America","QA":"Asia",
+  "RO":"Europe","RS":"Europe","RU":"Europe","RW":"Africa","SA":"Asia","SB":"Oceania","SC":"Africa",
+  "SD":"Africa","SE":"Europe","SG":"Asia","SI":"Europe","SK":"Europe","SL":"Africa","SM":"Europe",
+  "SN":"Africa","SO":"Africa","SR":"South America","SS":"Africa","ST":"Africa","SV":"North America",
+  "SY":"Asia","SZ":"Africa","TD":"Africa","TG":"Africa","TH":"Asia","TJ":"Asia","TL":"Asia","TM":"Asia",
+  "TN":"Africa","TO":"Oceania","TR":"Asia","TT":"North America","TV":"Oceania","TW":"Asia","TZ":"Africa",
+  "UA":"Europe","UG":"Africa","US":"North America","UY":"South America","UZ":"Asia","VA":"Europe",
+  "VC":"North America","VE":"South America","VN":"Asia","VU":"Oceania","WS":"Oceania","YE":"Asia",
+  "ZA":"Africa","ZM":"Africa","ZW":"Africa"
+};
+
 // Comprehensive country list (deduplicated by ISO) — built once from PEN_CODE_MAP.
 // Used by the assign popup datalist.
 const ALL_COUNTRIES = (() => {
@@ -1636,7 +1751,9 @@ function openAssignPopup(code) {
   const cur = document.getElementById('assign-current');
   if (override) {
     cur.className = 'assign-current overridden';
-    cur.textContent = `your override → ${override[0]} (${override[1]})`;
+    const [cName, cIso, cRegion, cLat, cLng] = override;
+    const regionStr = cRegion ? ` · ${cRegion}` : '';
+    cur.textContent = `your override → ${cName} (${cIso})${regionStr}`;
     document.getElementById('assign-clear').style.display = 'block';
   } else if (builtin && builtin.length) {
     cur.className = 'assign-current';
@@ -1648,9 +1765,18 @@ function openAssignPopup(code) {
     document.getElementById('assign-clear').style.display = 'none';
   }
   const inp = document.getElementById('assign-input');
+  const cityInp = document.getElementById('assign-city');
   inp.value = override ? override[0] : '';
+  cityInp.value = (override && override[2]) ? override[2] : '';
+  setAssignHint('', '');
   pop.classList.add('open');
   setTimeout(() => inp.focus(), 50);
+}
+
+function setAssignHint(cls, text) {
+  const el = document.getElementById('assign-hint');
+  el.className = 'assign-hint' + (cls ? ' ' + cls : '');
+  el.textContent = text || '';
 }
 
 function closeAssign() {
@@ -1665,26 +1791,162 @@ function clearAssign() {
   closeAssign();
 }
 
-function saveAssign() {
+async function saveAssign() {
   const code = document.getElementById('assign-code-display').textContent;
   const name = document.getElementById('assign-input').value.trim();
+  const city = document.getElementById('assign-city').value.trim();
   if (!code || code === '—') return;
-  if (!name) return;
-  // Exact match first; if not, case-insensitive lookup
+  if (!name) {
+    setAssignHint('fail', 'pick a country first');
+    return;
+  }
   let match = ALL_COUNTRIES.find(c => c.name === name);
   if (!match) match = ALL_COUNTRIES.find(c => c.name.toLowerCase() === name.toLowerCase());
   if (!match) {
-    alert(`Country "${name}" not recognised.\nPick one from the suggestions, or type the exact name.`);
+    setAssignHint('fail', `"${name}" not recognised — pick from suggestions`);
     return;
   }
-  userPenMap[code] = [match.name, match.iso, null, null, null];
+  let lat = null, lng = null;
+  if (city) {
+    setAssignHint('', `📍 looking up ${city}…`);
+    try {
+      const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(city + ', ' + match.name), { headers: {'Accept-Language':'en'} });
+      const d = await r.json();
+      if (d && d[0]) {
+        lat = parseFloat(d[0].lat);
+        lng = parseFloat(d[0].lon);
+      }
+    } catch (e) { /* offline — save without coords */ }
+  }
+  userPenMap[code] = [match.name, match.iso, city || null, lat, lng];
   localStorage.setItem('rw_user_pen_map', JSON.stringify(userPenMap));
-  // Reset announcement key so the new country is spoken even if same as last
   _lastAnnouncedKey = null;
   closeAssign();
-  // Replay this code so the user gets immediate playback of the right country
   handlePenCode(code);
 }
+
+// ── Export panel ────────────────────────────────────────────────────────
+function csvEscape(v) {
+  const s = (v == null) ? '' : String(v);
+  if (/[,"\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+  return s;
+}
+
+function buildPenJsSnippet() {
+  const codes = Object.keys(userPenMap).sort();
+  if (!codes.length) return '// No overrides yet — tap an unmapped country code with the pen, label it, then come back here.';
+  const lines = codes.map(code => {
+    const [country, iso, region, lat, lng] = userPenMap[code];
+    const r = region == null ? 'null' : JSON.stringify(region);
+    const la = lat == null ? 'null' : lat;
+    const ln = lng == null ? 'null' : lng;
+    return `  "${code}": [[${JSON.stringify(country)},"${iso}",${r},${la},${ln}]],`;
+  });
+  return lines.join('\n');
+}
+
+function buildPenCsv() {
+  const header = ['code','country','iso','city','lat','lng'];
+  const rows = [header.join(',')];
+  for (const code of Object.keys(userPenMap).sort()) {
+    const [country, iso, region, lat, lng] = userPenMap[code];
+    rows.push([code, country, iso, region || '', lat ?? '', lng ?? ''].map(csvEscape).join(','));
+  }
+  return rows.join('\n') + '\n';
+}
+
+function buildRadioJsSnippet() {
+  // Emits the BUILT_IN array exactly as needed (built-ins respecting overrides
+  // and hidden flags, then customs appended).
+  const lines = ['const BUILT_IN = ['];
+  for (const s of stations) {
+    const obj = { name: s.name, city: s.city, country: s.country, lat: s.lat, lng: s.lng };
+    if (s.web)    obj.web = s.web;
+    if (s.stream) obj.stream = s.stream;
+    if (s.desc)   obj.desc = s.desc;
+    // JSON.stringify with single-quoted output isn't built-in; we emit JSON which is valid JS object literal too.
+    lines.push('  ' + JSON.stringify(obj) + ',');
+  }
+  lines.push('];');
+  return lines.join('\n');
+}
+
+function buildRadioCsv() {
+  const header = ['Continent','Country','City','Radio Station','Description','Website','URL Link','Favourite'];
+  const rows = [header.join(',')];
+  for (const s of stations) {
+    const iso = STATION_COUNTRY_TO_ISO[(s.country || '').toLowerCase()] || null;
+    let continent = ISO_TO_CONTINENT[iso] || '';
+    if (!continent && s.country === 'Global') continent = 'Global';
+    const fav = favs.has(s.name) ? 'yes' : '';
+    rows.push([continent, s.country, s.city, s.name, s.desc || '', s.web || '', s.stream || '', fav].map(csvEscape).join(','));
+  }
+  return rows.join('\n') + '\n';
+}
+
+function downloadFile(text, filename, mime) {
+  const blob = new Blob([text], { type: mime + ';charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function downloadPenCsv() {
+  const ts = new Date().toISOString().slice(0, 10);
+  downloadFile(buildPenCsv(), `oreilles-fm_pen-mappings_${ts}.csv`, 'text/csv');
+}
+function downloadRadioCsv() {
+  const ts = new Date().toISOString().slice(0, 10);
+  downloadFile(buildRadioCsv(), `oreilles-fm_radio-stations_${ts}.csv`, 'text/csv');
+}
+
+function copyExport(elemId, btn) {
+  const el = document.getElementById(elemId);
+  el.select();
+  const toastId = elemId === 'pen-js-snippet' ? 'pen-toast' : 'radio-toast';
+  const showToast = () => {
+    const t = document.getElementById(toastId);
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 1500);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(el.value).then(showToast).catch(showToast);
+  } else {
+    document.execCommand('copy');
+    showToast();
+  }
+}
+
+function clearPenOverrides() {
+  const n = Object.keys(userPenMap).length;
+  if (!n) return;
+  if (!confirm(`Clear all ${n} pen-code overrides from this browser?\n\nMake sure you've copied the JS snippet first if you want to keep them.`)) return;
+  userPenMap = {};
+  localStorage.removeItem('rw_user_pen_map');
+  document.getElementById('pen-js-snippet').value = buildPenJsSnippet();
+  document.getElementById('pen-count').textContent = '(0 overrides)';
+}
+
+function openExport() {
+  // Refresh contents on every open
+  const penCount = Object.keys(userPenMap).length;
+  document.getElementById('pen-count').textContent = `(${penCount} override${penCount===1?'':'s'})`;
+  document.getElementById('radio-count').textContent = `(${stations.length} stations)`;
+  document.getElementById('pen-js-snippet').value = buildPenJsSnippet();
+  document.getElementById('radio-js-snippet').value = buildRadioJsSnippet();
+  document.getElementById('export-overlay').classList.add('open');
+}
+function closeExport() {
+  document.getElementById('export-overlay').classList.remove('open');
+}
+// Click backdrop closes
+document.addEventListener('DOMContentLoaded', () => {
+  const ov = document.getElementById('export-overlay');
+  if (ov) ov.addEventListener('click', e => { if (e.target === ov) closeExport(); });
+});
 
 // ── Fallback: fetch top station for ISO from radio-browser and play it ────
 async function playRBForCountry(iso, countryName, regionLat, regionLng) {
