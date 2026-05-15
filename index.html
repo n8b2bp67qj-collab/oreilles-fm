@@ -815,7 +815,6 @@ function onVolume(v) {
 async function playStation(idx) {
   const s = stations[idx];
   const btn = document.getElementById('pop-playbtn');
-  if (current?.name === s.name && playing) { audio.pause(); return; }
   if (btn) { btn.className='pop-play loading'; btn.textContent='⟳ tuning…'; }
   startStatic();                                           // FM-style hiss while loading
   document.getElementById('pmeta').textContent = '📡 tuning…';
